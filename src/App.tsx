@@ -12,6 +12,7 @@ import Directorio from "./pages/Directorio";
 import Informes from "./pages/Informes";
 import Auditoria from "./pages/Auditoria";
 import Admin from "./admin/Admin";
+import { Acceso } from "./components/Acceso";
 
 function Protegida({ children }: { children: ReactNode }) {
   const u = useApp((s) => s.usuarioId);
@@ -22,6 +23,7 @@ function Protegida({ children }: { children: ReactNode }) {
 export default function App() {
   useTema();
   return (
+    <Acceso>
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Login />} />
@@ -38,5 +40,6 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
+    </Acceso>
   );
 }
