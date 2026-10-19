@@ -69,7 +69,7 @@ export default function Admin() {
             <div className="grid grid-cols-2 gap-2">
               {Object.values(INDUSTRIAS).map((i) => (
                 <button key={i.id} onClick={() => { setIndustria(i.id); setCol(CLIENTES[INDUSTRIAS[i.id].clientes[0]].colores); toast(`Industria ${i.nombre} cargada`, "ok"); }} className={`text-left border px-3 py-2.5 ${config.industria === i.id ? "border-accent bg-accentSoft" : "border-rule hover:border-ink3"}`}>
-                  <div className="font-medium text-[12.5px]">{i.nombre}</div>
+                  <div className="font-bold text-[14px]">{i.nombre}</div>
                   <div className="text-[11px] text-ink3">{i.notas.length} notas · {i.fuentes.length} fuentes</div>
                   <div className="text-[11px] text-ink2 mt-1">{i.descripcion}</div>
                 </button>
@@ -88,7 +88,7 @@ export default function Admin() {
               {ESCENARIOS.map((e) => (
                 <button key={e.id} onClick={() => { reiniciar(e.id); toast(`Escenario "${e.t}" cargado`, "ok"); }} className={`w-full text-left border px-3 py-2.5 flex gap-3 ${escenario === e.id ? "border-accent bg-accentSoft" : "border-rule hover:border-ink3"}`}>
                   <RotateCcw size={14} className="mt-0.5 text-ink3 shrink-0" />
-                  <div><div className="font-medium text-[12.5px]">{e.t}</div><div className="text-[11.5px] text-ink2">{e.d}</div></div>
+                  <div><div className="font-bold text-[14px]">{e.t}</div><div className="text-[11.5px] text-ink2">{e.d}</div></div>
                 </button>
               ))}
             </div>

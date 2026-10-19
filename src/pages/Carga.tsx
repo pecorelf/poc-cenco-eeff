@@ -4,14 +4,15 @@ import { motion, AnimatePresence } from "motion/react";
 import { RefreshCw, UploadCloud, FileSpreadsheet, Download, CheckCircle2, XCircle, AlertTriangle, Database, FileText, ArrowRight, Link2 } from "lucide-react";
 import { useApp } from "../engine/store";
 import { Encabezado } from "../components/Shell";
-import { Label, EstadoFuenteTag, Drawer, Avatar, usePerfiles, tiene, esperar, Num } from "../components/ui";
+import { Label, EstadoFuenteTag, Drawer, Avatar, usePerfiles, tiene, esperar, Num, LineaTiempo } from "../components/ui";
+import { Buscador, Filtros, CabeceraListado, normalizar } from "../components/Listado";
 import type { EstadoFuente, FuenteDef, FuenteRun } from "../engine/types";
 import { fechaHora, miles, hashStr } from "../engine/util";
 import { usuario } from "../config/users";
 import { descargarXlsx } from "../engine/export";
 
 const ESTADOS: EstadoFuente[] = ["Pendiente", "Cargada", "Con errores", "Validada", "Habilitada"];
-const COLOR: Record<EstadoFuente, string> = { Pendiente: "var(--ink-3)", Cargada: "var(--ink-2)", "Con errores": "var(--ko)", Validada: "var(--warn)", Habilitada: "var(--ok)" };
+const COLOR: Record<EstadoFuente, string> = { Pendiente: "#b8bec8", Cargada: "var(--accent)", "Con errores": "var(--ko)", Validada: "var(--warn)", Habilitada: "var(--ok)" };
 
 // Extracciones en curso (asíncronas: sobreviven al cierre del drawer)
 type Extr = { inicio: number; dur: number; objetivo: number };
@@ -58,14 +59,14 @@ function Progreso({ x }: { x: Extr }) {
   }, [x]);
   const ease = 1 - Math.pow(1 - p, 2.2);
   return (
-    <div className="w-[170px]">
-      <div className="flex justify-between text-[10.5px] text-ink3 mb-1">
-        <span>{p === 0 ? "En cola" : p < 0.35 ? "Consultando Data Lake" : p < 0.8 ? "Extrayendo registros" : "Validando"}</span>
-        <span className="tnum text-ink2">{miles(Math.round(x.objetivo * ease))}</span>
+    <div className="w-[190px]">
+      <div className="flex justify-between text-[11.5px] mb-1">
+        <span className="text-ink2 font-medium">{p === 0 ? "En cola" : p < 0.35 ? "Consultando…" : p < 0.8 ? "Procesando…" : "Validando…"}</span>
+        <span className="tnum text-ink2">{miles(Math.round(x.objetivo * ease))} registros</span>
       </div>
-      <div className="h-[3px] bg-rule2 relative overflow-hidden">
-        <div className="absolute inset-y-0 left-0 bg-accent" style={{ width: `${ease * 100}%` }} />
-        <div className="absolute inset-0 shimmer" />
+      <div className="barra">
+        <i style={{ width: `${ease * 100}%`, background: "linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 45%, white))" }} />
+        <span className="absolute inset-0 shimmer" />
       </div>
     </div>
   );
@@ -165,7 +166,7 @@ function CargaManual({ def, f, puede }: { def: FuenteDef; f: FuenteRun; puede: b
         </div>
       ) : (
         <div className="border border-rule">
-          <div className="flex items-center gap-3 px-4 h-11 border-b border-rule bg-paper">
+          <div className="flex items-center gap-3 px-5 h-14 border-b border-rule bg-paper">
             <FileSpreadsheet size={16} className="text-accent" />
             <div className="text-[12.5px] font-medium truncate flex-1">{archivo}</div>
             <span className="text-[11px] text-ink3 tnum">v{fase === "fin" ? f.version : f.version + 1}</span>
@@ -323,17 +324,19 @@ function DetalleFuente({ id, onClose, ext, lanzar }: { id: string | null; onClos
         </div>
       )}
 
-      <div className="px-5 py-4">
-        <Label className="mb-2">Versiones</Label>
-        {f.versiones.length === 0 ? <div className="text-[12px] text-ink3">Sin cargas en este ejercicio.</div> : (
-          <div className="overflow-x-auto"><table className="tbl">
-            <thead><tr><th>Versión</th><th>Fecha</th><th>Usuario</th><th>Archivo / ejecución</th><th>Resultado</th></tr></thead>
-            <tbody>
-              {[...f.versiones].reverse().map((v) => (
-                <tr key={v.v}><td className="tnum">v{v.v}</td><td className="tnum whitespace-nowrap">{fechaHora(v.fecha)}</td><td className="whitespace-nowrap">{usuario(v.usuario).nombre}</td><td className="text-ink2 max-w-[180px] truncate">{v.archivo}</td><td className="whitespace-nowrap">{v.resultado}</td></tr>
-              ))}
-            </tbody>
-          </table></div>
+      <div className="px-7 py-5">
+        <div className="font-bold text-[16px] mb-4">Historial</div>
+        {f.versiones.length === 0 ? <div className="text-[12.5px] text-ink3">Sin cargas en este ejercicio.</div> : (
+          <LineaTiempo items={[...f.versiones].reverse().map((v) => ({
+            titulo: `${v.resultado === "Con errores" ? "Carga rechazada" : def.tipo === "integrada" ? "Extracción desde Data Lake" : "Carga de archivo"} · v${v.v}`,
+            error: v.resultado === "Con errores",
+            filas: [
+              { k: "Fecha", v: fechaHora(v.fecha) },
+              { k: def.tipo === "integrada" ? "Ejecutado por" : "Cargado por", v: usuario(v.usuario).nombre },
+              { k: "Resultado", v: v.resultado }
+            ],
+            extra: def.tipo === "manual" ? <button className="mt-1.5 text-[12.5px] font-semibold text-accent underline underline-offset-2 inline-flex items-center gap-1" onClick={() => toast(`Descarga de ${v.archivo} registrada`, "info")}>{v.archivo} <Download size={13} /></button> : undefined
+          }))} />
         )}
       </div>
     </Drawer>
@@ -387,8 +390,8 @@ function Homologacion() {
   return (
     <div className="space-y-4">
       <div className="bg-panel border border-rule">
-        <div className="px-4 h-11 flex items-center border-b border-rule gap-3">
-          <div className="font-medium text-[13px]">Cuentas nuevas sin asignar</div>
+        <div className="px-5 h-14 flex items-center border-b border-rule gap-3">
+          <div className="font-bold text-[15px]">Cuentas nuevas sin asignar</div>
           <span className="text-[11.5px] text-ink3">Tabla vigente {ej.parametros.homologacion}</span>
         </div>
         {ej.homologacionPendiente.length === 0 ? <div className="px-4 py-4 text-[12px] text-ink3">No hay cuentas nuevas en el consolidado del periodo.</div> : (
@@ -429,7 +432,7 @@ function Homologacion() {
         )}
       </div>
       <div className="bg-panel border border-rule">
-        <div className="px-4 h-11 flex items-center border-b border-rule"><div className="font-medium text-[13px]">Maestro de homologación · cuenta → rubro → concepto → línea de nota</div></div>
+        <div className="px-5 h-14 flex items-center border-b border-rule"><div className="font-bold text-[15px]">Maestro de homologación · cuenta → rubro → concepto → línea de nota</div></div>
         <div className="overflow-x-auto"><table className="tbl">
           <thead><tr><th>Cuenta</th><th>Rubro</th><th>Concepto</th><th>Nota</th><th>Línea</th></tr></thead>
           <tbody>
@@ -449,7 +452,7 @@ function Documentos() {
   const ej = useApp((s) => s.ej());
   return (
     <div className="bg-panel border border-rule">
-      <div className="px-4 h-11 flex items-center border-b border-rule"><div className="font-medium text-[13px]">Repositorio documental del ejercicio · alimenta al Agente de texto</div></div>
+      <div className="px-5 h-14 flex items-center border-b border-rule"><div className="font-bold text-[15px]">Repositorio documental del ejercicio · alimenta al Agente de texto</div></div>
       <div className="overflow-x-auto"><table className="tbl">
         <thead><tr><th>ID</th><th>Documento</th><th>Tipo</th><th>Notas</th><th>Contenido</th></tr></thead>
         <tbody>
@@ -475,13 +478,14 @@ export default function Carga() {
   const perfiles = usePerfiles();
   const [params, setParams] = useSearchParams();
   const [tab, setTab] = useState<"fuentes" | "completitud" | "homologacion" | "documentos">((params.get("tab") as any) ?? "fuentes");
-  const [fTipo, setFTipo] = useState("");
-  const [fEstado, setFEstado] = useState("");
+  const [q, setQ] = useState("");
+  const [fTipos, setFTipos] = useState<string[]>([]);
+  const [fEstados, setFEstados] = useState<string[]>([]);
   const { ext, lanzar } = useExtracciones();
   const abierta = params.get("f");
   const puede = tiene(perfiles, "carga", "proceso", "admin") && !ej.historico;
   const integradas = pack.fuentes.filter((f) => f.tipo === "integrada").map((f) => f.id);
-  const filas = pack.fuentes.filter((d) => (!fTipo || d.tipo === fTipo) && (!fEstado || ej.fuentes.find((f) => f.id === d.id)?.estado === fEstado));
+  const filas = pack.fuentes.filter((d) => (!fTipos.length || fTipos.includes(d.tipo === "integrada" ? "Integradas" : "Manuales")) && (!fEstados.length || fEstados.includes(ej.fuentes.find((f) => f.id === d.id)!.estado)) && (!q || normalizar(`${d.nombre} ${d.origen}`).includes(normalizar(q))));
   const sinHomologar = ej.homologacionPendiente.filter((h) => !h.asignada).length;
 
   const TABS = [
@@ -519,10 +523,13 @@ export default function Carga() {
 
         {tab === "fuentes" && (
           <div className="bg-panel border border-rule">
-            <div className="flex items-center gap-3 px-4 h-11 border-b border-rule">
-              <select className="inp !w-auto !h-7 text-[12px]" value={fTipo} onChange={(e) => setFTipo(e.target.value)}><option value="">Integradas y manuales</option><option value="integrada">Integradas</option><option value="manual">Manuales</option></select>
-              <select className="inp !w-auto !h-7 text-[12px]" value={fEstado} onChange={(e) => setFEstado(e.target.value)}><option value="">Todos los estados</option>{ESTADOS.map((e) => <option key={e}>{e}</option>)}</select>
-            </div>
+            <CabeceraListado titulo="Tus fuentes">
+              <Buscador valor={q} onChange={setQ} placeholder="Buscar fuentes por nombre u origen" />
+              <Filtros grupos={[
+                { titulo: "Estado", opciones: ESTADOS, seleccion: fEstados, onChange: setFEstados },
+                { titulo: "Tipo de fuente", opciones: ["Integradas", "Manuales"], seleccion: fTipos, onChange: setFTipos }
+              ]} />
+            </CabeceraListado>
             <div className="overflow-x-auto"><table className="tbl min-w-[1080px]">
               <thead><tr><th className="min-w-[260px]">Fuente</th><th>Tipo</th><th>Obligatoriedad</th><th>Resp.</th><th className="num">Notas</th><th>Estado</th><th>Última carga</th><th className="num">Registros</th><th className="w-[180px]" /></tr></thead>
               <tbody>
@@ -541,7 +548,7 @@ export default function Carga() {
                       <td className="num text-ink2">{f.registros ? miles(f.registros) : "—"}</td>
                       <td onClick={(e) => e.stopPropagation()} className="text-right whitespace-nowrap">
                         {ext[d.id] ? <Progreso x={ext[d.id]} /> : d.tipo === "integrada" ? (
-                          <button className="btn btn-sm" disabled={!puede} onClick={() => lanzar([d.id])}><RefreshCw size={12} /> Actualizar</button>
+                          <button className="btn-ico" disabled={!puede} title="Actualizar desde Data Lake" onClick={() => lanzar([d.id])}><RefreshCw size={16} /></button>
                         ) : (
                           <button className="btn btn-sm" onClick={() => setParams({ f: d.id })}>{f.estado === "Validada" ? "Revisar advertencias" : f.estado === "Con errores" ? "Corregir" : f.estado === "Pendiente" ? "Cargar archivo" : "Ver versiones"}</button>
                         )}

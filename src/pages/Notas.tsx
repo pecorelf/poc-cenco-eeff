@@ -4,11 +4,12 @@ import { motion, AnimatePresence } from "motion/react";
 import { Play, RefreshCw, SlidersHorizontal, Send, Download, Lock, AlertTriangle, Bot, CheckCircle2, XCircle, ArrowLeft, FileText, Sparkles, Link2 } from "lucide-react";
 import { useApp } from "../engine/store";
 import { Encabezado } from "../components/Shell";
-import { Label, EstadoNotaTag, Avatar, Modal, usePerfiles, tiene, esperar, TextoAgente, OkKo, Semaforo, estiloNota } from "../components/ui";
+import { Label, EstadoNotaTag, Avatar, Modal, usePerfiles, tiene, esperar, TextoAgente, OkKo, Semaforo, estiloNota, Barra } from "../components/ui";
 import { TablaCuadro, PanelControles, Trazabilidad, HiloComentarios, Versiones, VistaIntermedia, exportarNota, parseMonto, type CeldaSel } from "../components/NotaPartes";
 import type { NotaDef, NotaRun, Ejercicio, IndustriaPack, Control } from "../engine/types";
 import { ESTADOS_NOTA } from "../engine/types";
 import { EstadosFinancieros } from "../components/Estados";
+import { Buscador, Filtros, CabeceraListado, Paginacion, normalizar } from "../components/Listado";
 import { controlesOk, insumosTexto, totalNota, evaluarControles } from "../engine/generator";
 import { agente } from "../engine/api";
 import { miles, fechaHora } from "../engine/util";
@@ -64,9 +65,17 @@ export default function Notas() {
   const vista = params.get("vista") ?? "notas";
   const supervisa = tiene(perfiles, ...SUPERVISION);
   const [mias, setMias] = useState(!supervisa);
-  const [fTipo, setFTipo] = useState("");
-  const [fEstado, setFEstado] = useState("");
-  const filas = ej.notas.filter((n) => (!mias || n.responsable === uid) && (!fTipo || pack.notas.find((d) => d.n === n.n)!.tipo === fTipo) && (!fEstado || n.estado === fEstado));
+  const [q, setQ] = useState("");
+  const [fTipos, setFTipos] = useState<string[]>([]);
+  const [fEstados, setFEstados] = useState<string[]>([]);
+  const [pagina, setPagina] = useState(0);
+  const [porPagina, setPorPagina] = useState(20);
+  const filas = ej.notas.filter((n) => {
+    const d = pack.notas.find((x) => x.n === n.n)!;
+    return (!mias || n.responsable === uid) && (!fTipos.length || fTipos.includes(d.tipo)) && (!fEstados.length || fEstados.includes(n.estado)) && (!q || normalizar(`${n.n} ${d.titulo}`).includes(normalizar(q)));
+  });
+  useEffect(() => setPagina(0), [q, fTipos, fEstados, mias]);
+  const visibles = filas.slice(pagina * porPagina, (pagina + 1) * porPagina);
   const desact = ej.notas.filter((n) => n.desactualizada).length;
   const TABS = [
     { id: "notas", t: "Notas", c: filas.length },
@@ -90,7 +99,7 @@ export default function Notas() {
 
         {vista === "mapa" && (
           <div className="bg-panel border border-rule">
-            <div className="px-4 h-11 flex items-center border-b border-rule font-medium text-[13px]">Mapa de dependencias entre notas</div>
+            <div className="px-5 h-14 flex items-center border-b border-rule font-bold text-[15px]">Mapa de dependencias entre notas</div>
             <div className="p-5 overflow-x-auto"><MapaDependencias ej={ej} pack={pack} /></div>
             <div className="px-4 py-2 border-t border-rule2 text-[11px] text-ink3">Si cambia una nota de origen, la dependiente queda desactualizada y no puede enviarse a revisión hasta actualizarla.</div>
           </div>
@@ -98,20 +107,24 @@ export default function Notas() {
 
         {vista === "notas" && (
           <div className="bg-panel border border-rule min-w-0">
-            <div className="flex flex-wrap items-center gap-3 px-4 py-2 border-b border-rule">
-              <div className="flex border border-rule">
-                <button onClick={() => setMias(true)} className={`px-3 h-7 text-[12px] ${mias ? "bg-ink text-white" : ""}`}>Mis notas</button>
-                <button onClick={() => setMias(false)} disabled={!supervisa} title={supervisa ? "" : "Solo perfiles de supervisión y consulta"} className={`px-3 h-7 text-[12px] ${!mias ? "bg-ink text-white" : ""}`}>Todas</button>
-              </div>
-              <select className="inp !w-auto !h-7 text-[12px]" value={fTipo} onChange={(e) => setFTipo(e.target.value)}><option value="">Todos los tipos</option><option>Automática</option><option>Híbrida</option><option>Texto</option></select>
-              <select className="inp !w-auto !h-7 text-[12px]" value={fEstado} onChange={(e) => setFEstado(e.target.value)}><option value="">Todos los estados</option>{ESTADOS_NOTA.map((e) => <option key={e}>{e}</option>)}</select>
-              <span className="ml-auto text-[11.5px] text-ink3 tnum">{filas.length} notas</span>
-            </div>
+            <CabeceraListado titulo={mias ? "Mis notas" : "Notas del ejercicio"}
+              extra={
+                <div className="flex p-1 rounded-lg bg-head">
+                  <button onClick={() => setMias(true)} className={`px-3 h-8 rounded-md text-[12.5px] font-semibold ${mias ? "bg-panel text-accent shadow-sm" : "text-ink2"}`}>Mis notas</button>
+                  <button onClick={() => setMias(false)} disabled={!supervisa} title={supervisa ? "" : "Solo perfiles de supervisión y consulta"} className={`px-3 h-8 rounded-md text-[12.5px] font-semibold ${!mias ? "bg-panel text-accent shadow-sm" : "text-ink2"}`}>Todas</button>
+                </div>
+              }>
+              <Buscador valor={q} onChange={setQ} placeholder="Buscar notas por nombre o número" />
+              <Filtros grupos={[
+                { titulo: "Estado", opciones: ESTADOS_NOTA, seleccion: fEstados, onChange: setFEstados },
+                { titulo: "Tipo de nota", opciones: ["Automática", "Híbrida", "Texto"], seleccion: fTipos, onChange: setFTipos }
+              ]} />
+            </CabeceraListado>
             <div className="overflow-x-auto">
               <table className="tbl min-w-[980px]">
                 <thead><tr><th className="w-8">N°</th><th>Nota</th><th>Tipo</th><th>Estado</th><th className="text-center">Cuadros</th><th className="text-center">Fuentes</th><th className="text-center">Controles</th><th>Depende de</th><th className="num">Coment.</th><th className="num">Versión</th><th>Resp.</th></tr></thead>
                 <tbody>
-                  {filas.map((n, i) => {
+                  {visibles.map((n, i) => {
                     const d = pack.notas.find((x) => x.n === n.n)!;
                     const fs = d.fuentes.map((f) => ej.fuentes.find((x) => x.id === f)!);
                     const ok = fs.filter((f) => f.estado === "Habilitada").length;
@@ -124,7 +137,7 @@ export default function Notas() {
                         <td className="text-ink2 text-[12px] whitespace-nowrap">{d.tipo}</td>
                         <td><EstadoNotaTag estado={n.estado} /></td>
                         <td className="text-center tnum text-[12px] text-ink2">{d.cuadros.length || "—"}</td>
-                        <td className="text-center tnum text-[12px] whitespace-nowrap" style={{ color: ok === fs.length ? "var(--ok)" : "var(--ink-2)" }}>{ok} de {fs.length}</td>
+                        <td className="min-w-[130px]"><Barra animar={false} estado={ok === fs.length ? "Completas" : "Faltan"} detalle={`${ok}/${fs.length}`} valor={ok / fs.length} color={ok === fs.length ? "var(--ok)" : "var(--accent)"} /></td>
                         <td className="text-center">{n.generada && d.cuadros.length ? <OkKo ok={!ko} dif={undefined} /> : <span className="text-ink3">—</span>}</td>
                         <td className="tnum text-[12px] text-ink2 whitespace-nowrap">{d.deps?.map((x) => `Nota ${x}`).join(", ") ?? "—"}</td>
                         <td className="num" style={{ color: com ? "var(--warn)" : "var(--ink-3)" }}>{com || "—"}</td>
@@ -136,6 +149,8 @@ export default function Notas() {
                 </tbody>
               </table>
             </div>
+            {filas.length === 0 && <div className="px-6 py-8 text-center text-[13px] text-ink3">No hay notas con esos filtros.</div>}
+            <Paginacion total={filas.length} pagina={pagina} porPagina={porPagina} onPagina={setPagina} onPorPagina={setPorPagina} />
           </div>
         )}
       </div>
@@ -189,7 +204,7 @@ function Generando({ def, onFin }: { def: NotaDef; onFin: () => void }) {
           <div className="absolute left-3 top-2 text-[10px] text-white/60">BPC C480 · {ej.periodo}</div>
         </div>
         <div className="px-6 py-5">
-          <div className="flex items-center gap-2 mb-4"><Play size={14} className="text-accent" /><span className="font-medium text-[13px]">Generando Nota {def.n} · v{(useApp.getState().nota(def.n)?.version ?? 0) + 1}</span></div>
+          <div className="flex items-center gap-2 mb-4"><Play size={14} className="text-accent" /><span className="font-bold text-[15px]">Generando Nota {def.n} · v{(useApp.getState().nota(def.n)?.version ?? 0) + 1}</span></div>
           {pasos.map((p, i) => (
             <div key={p.t} className="flex items-start gap-3 py-1.5">
               <span className="w-4 mt-0.5 flex justify-center">{paso > i ? <CheckCircle2 size={14} className="text-ok" /> : paso === i ? <span className="w-[7px] h-[7px] mt-1 bg-accent live-dot" /> : <span className="w-[7px] h-[7px] mt-1 border border-rule" />}</span>
@@ -226,8 +241,8 @@ function AjustesRegistrados({ nota }: { nota: NotaRun }) {
   if (!conf.length) return null;
   return (
     <div className="bg-panel border border-rule">
-      <div className="px-4 h-10 flex items-center justify-between border-b border-rule">
-        <span className="font-medium text-[12.5px] flex items-center gap-2"><span className="w-2.5 h-2.5" style={{ background: "color-mix(in srgb, var(--accent-3) 40%, white)", boxShadow: "inset 2px 0 0 var(--accent-3)" }} /> Ajustes manuales registrados</span>
+      <div className="px-5 h-14 flex items-center justify-between border-b border-rule">
+        <span className="font-bold text-[14px] flex items-center gap-2"><span className="w-2.5 h-2.5" style={{ background: "color-mix(in srgb, var(--accent-3) 40%, white)", boxShadow: "inset 2px 0 0 var(--accent-3)" }} /> Ajustes manuales registrados</span>
         <span className="text-[11px] text-ink3">{conf.length} · registros separados de la cifra calculada</span>
       </div>
       <div className="overflow-x-auto">
@@ -344,7 +359,7 @@ function TextoNota({ nota, def, editable }: { nota: NotaRun; def: NotaDef; edita
   return (
     <div className="grid grid-cols-2 gap-4">
       <div className="bg-panel border border-rule">
-        <div className="px-4 h-10 flex items-center justify-between border-b border-rule"><span className="font-medium text-[12.5px]">Texto del periodo anterior</span><span className="text-[11px] text-ink3">Aprobado · base de redacción [D5]</span></div>
+        <div className="px-5 h-14 flex items-center justify-between border-b border-rule"><span className="font-bold text-[14px]">Texto del periodo anterior</span><span className="text-[11px] text-ink3">Aprobado · base de redacción [D5]</span></div>
         <div className="px-4 py-3 text-[12.5px] text-ink2 whitespace-pre-wrap leading-[1.65]">{ins.textoAnterior}</div>
         <div className="px-4 py-3 border-t border-rule">
           <Label className="mb-1">Documentación vigente del periodo</Label>
@@ -352,8 +367,8 @@ function TextoNota({ nota, def, editable }: { nota: NotaRun; def: NotaDef; edita
         </div>
       </div>
       <div className="bg-panel border border-rule flex flex-col">
-        <div className="px-4 h-10 flex items-center justify-between border-b border-rule">
-          <span className="font-medium text-[12.5px] flex items-center gap-2"><Bot size={14} className="text-accent" /> Propuesta del Agente de texto</span>
+        <div className="px-5 h-14 flex items-center justify-between border-b border-rule">
+          <span className="font-bold text-[14px] flex items-center gap-2"><Bot size={14} className="text-accent" /> Propuesta del Agente de texto</span>
           <div className="flex gap-2">
             {prop && !cargando && editable && <button className="btn btn-sm btn-g" onClick={() => { setEditando(!editando); setBorrador(prop); }}>{editando ? "Ver marcas" : "Editar"}</button>}
             <button className="btn btn-sm btn-p" disabled={!editable || cargando} onClick={proponer}><Sparkles size={13} /> {prop ? "Volver a proponer" : "Proponer texto"}</button>
@@ -487,12 +502,12 @@ export function NotaDetalle() {
 
   return (
     <div>
-      <div className="px-6 pt-4 pb-4 bg-panel border-b border-rule">
+      <div className="px-6 pt-5 pb-2">
         <button className="text-[11.5px] text-ink3 hover:text-ink flex items-center gap-1 mb-1" onClick={() => nav("/notas")}><ArrowLeft size={12} /> Generación de notas</button>
         <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
           <div className="min-w-0">
             <div className="flex items-center gap-3">
-              <h1 className="text-[21px] font-semibold tracking-[-0.01em]">Nota {n} · {def.titulo}</h1>
+              <h1 className="text-[26px] font-bold tracking-[-0.01em]">Nota {n} · {def.titulo}</h1>
             </div>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-[12px] text-ink2">
               <EstadoNotaTag estado={nota.estado} />
@@ -638,8 +653,8 @@ function ResumenControles({ controles, provisoria, onVer, onTrazar }: { controle
   const ko = controles.filter((c) => c.bloqueante && c.dif !== 0);
   return (
     <div className="bg-panel border border-rule xl:sticky xl:top-4">
-      <div className="px-4 h-10 flex items-center justify-between border-b border-rule">
-        <span className="font-medium text-[12.5px]">Controles{provisoria && <span className="ml-2 text-[10.5px] font-normal" style={{ color: "#9a5a00" }}>con capa provisoria</span>}</span>
+      <div className="px-5 h-14 flex items-center justify-between border-b border-rule">
+        <span className="font-bold text-[14px]">Controles{provisoria && <span className="ml-2 text-[10.5px] font-normal" style={{ color: "#9a5a00" }}>con capa provisoria</span>}</span>
         <button className="text-[11.5px] text-accent" onClick={onVer}>Detalle</button>
       </div>
       {controles.map((c, i) => (
@@ -657,7 +672,7 @@ function OrigenLineas({ nota, onTrazar }: { nota: NotaRun; onTrazar: (s: CeldaSe
   if (!nota.generada) return <div className="text-[12px] text-ink3">Genera la nota para ver la trazabilidad.</div>;
   return (
     <div className="bg-panel border border-rule">
-      <div className="px-4 h-10 flex items-center border-b border-rule font-medium text-[12.5px]">Origen de cada línea publicada</div>
+      <div className="px-5 h-14 flex items-center border-b border-rule font-bold text-[14px]">Origen de cada línea publicada</div>
       <div className="overflow-x-auto"><table className="tbl">
         <thead><tr><th>Cuadro</th><th>Línea</th><th>Origen</th><th className="num">Cuentas</th><th className="num">Ajustes</th><th className="num">M$</th><th /></tr></thead>
         <tbody>

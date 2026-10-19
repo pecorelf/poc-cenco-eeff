@@ -12,22 +12,29 @@ import { agente } from "../engine/api";
 import { miles, fechaHora, hoy, habilesEntre, fechaCorta } from "../engine/util";
 import { usuario, USUARIOS } from "../config/users";
 import { descargarXlsx } from "../engine/export";
+import { Buscador, Filtros, CabeceraListado, normalizar } from "../components/Listado";
 
 function Bandeja() {
   const ej = useApp((s) => s.ej());
   const pack = useApp((s) => s.pack());
   const nav = useNavigate();
-  const [fResp, setFResp] = useState("");
-  const [fTipo, setFTipo] = useState("");
-  const filas = ej.notas.filter((n) => n.estado === "Lista para revisión" && (!fResp || n.responsable === fResp) && (!fTipo || pack.notas.find((d) => d.n === n.n)!.tipo === fTipo));
-  const resp = [...new Set(ej.notas.filter((n) => n.estado === "Lista para revisión").map((n) => n.responsable))];
+  const [fResps, setFResps] = useState<string[]>([]);
+  const [fTipos, setFTipos] = useState<string[]>([]);
+  const [q, setQ] = useState("");
+  const filas = ej.notas.filter((n) => {
+    const d = pack.notas.find((x) => x.n === n.n)!;
+    return n.estado === "Lista para revisión" && (!fResps.length || fResps.includes(usuario(n.responsable).nombre)) && (!fTipos.length || fTipos.includes(d.tipo)) && (!q || normalizar(`${n.n} ${d.titulo}`).includes(normalizar(q)));
+  });
+  const resp = [...new Set(ej.notas.filter((n) => n.estado === "Lista para revisión").map((n) => usuario(n.responsable).nombre))];
   return (
     <div className="bg-panel border border-rule">
-      <div className="flex items-center gap-3 px-4 h-11 border-b border-rule">
-        <div className="font-medium text-[13px] mr-auto">Notas enviadas a revisión</div>
-        <select className="inp !w-auto !h-7 text-[12px]" value={fResp} onChange={(e) => setFResp(e.target.value)}><option value="">Todos los responsables</option>{resp.map((r) => <option key={r} value={r}>{usuario(r).nombre}</option>)}</select>
-        <select className="inp !w-auto !h-7 text-[12px]" value={fTipo} onChange={(e) => setFTipo(e.target.value)}><option value="">Todos los tipos</option><option>Automática</option><option>Híbrida</option><option>Texto</option></select>
-      </div>
+      <CabeceraListado titulo="Notas enviadas a revisión">
+        <Buscador valor={q} onChange={setQ} placeholder="Buscar notas por nombre o número" />
+        <Filtros grupos={[
+          { titulo: "Responsable", opciones: resp, seleccion: fResps, onChange: setFResps },
+          { titulo: "Tipo de nota", opciones: ["Automática", "Híbrida", "Texto"], seleccion: fTipos, onChange: setFTipos }
+        ]} />
+      </CabeceraListado>
       {filas.length === 0 ? <div className="px-4 py-6 text-[12px] text-ink3">No hay notas pendientes de revisión.</div> : (
         <div className="overflow-x-auto"><table className="tbl">
           <thead><tr><th className="w-8">N°</th><th>Nota</th><th>Tipo</th><th>Responsable</th><th>Enviada</th><th>Antigüedad · SLA 2 días hábiles</th><th className="num">Versión</th><th /></tr></thead>
@@ -38,8 +45,8 @@ function Bandeja() {
               return (
                 <motion.tr key={n.n} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }} className="cursor-pointer" onClick={() => nav(`/preaprobacion/${n.n}`)}>
                   <td className="tnum text-ink3">{n.n}</td><td>{d.titulo}</td><td className="text-ink2">{d.tipo}</td>
-                  <td><span className="flex items-center gap-1.5"><Avatar id={n.responsable} size={18} />{usuario(n.responsable).nombre}</span></td>
-                  <td className="tnum text-ink2 text-[12px]">{n.enviadaEl ? fechaHora(n.enviadaEl) : "—"}</td>
+                  <td><span className="flex items-center gap-2 whitespace-nowrap"><Avatar id={n.responsable} size={26} />{usuario(n.responsable).nombre}</span></td>
+                  <td className="tnum text-ink2 text-[12px] whitespace-nowrap">{n.enviadaEl ? fechaHora(n.enviadaEl) : "—"}</td>
                   <td><Semaforo dias={dias} sla={2} /></td>
                   <td className="num">v{n.version}</td>
                   <td className="text-right"><button className="btn btn-sm btn-p">Revisar</button></td>
@@ -141,8 +148,8 @@ function Consolidado() {
 
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-4 items-start">
         <div className="bg-panel border border-rule">
-          <div className="px-4 h-11 flex items-center justify-between border-b border-rule">
-            <span className="font-medium text-[13px] flex items-center gap-2"><FileStack size={15} className="text-accent" /> Pre-informe de estados financieros</span>
+          <div className="px-5 h-14 flex items-center justify-between border-b border-rule">
+            <span className="font-bold text-[15px] flex items-center gap-2"><FileStack size={15} className="text-accent" /> Pre-informe de estados financieros</span>
             <div className="flex gap-2">
               {ej.preinforme && <button className="btn btn-sm" onClick={() => setLector(true)}>Abrir documento</button>}
               {esAprob && !ej.consolidadoPreaprobado && <button className="btn btn-sm btn-p" disabled={!todas || armando} title={todas ? "" : "Solo se consolidan notas aprobadas"} onClick={armar}><Bot size={13} /> {ej.preinforme ? "Regenerar pre-informe" : "Generar pre-informe"}</button>}
@@ -193,7 +200,7 @@ function Consolidado() {
 
         <div className="space-y-4">
           <div className="bg-panel border border-rule">
-            <div className="px-4 h-11 flex items-center border-b border-rule font-medium text-[13px]">Acciones del consolidado</div>
+            <div className="px-5 h-14 flex items-center border-b border-rule font-bold text-[15px]">Acciones del consolidado</div>
             <div className="p-4 space-y-3 text-[12px]">
               <div>
                 <button className="btn btn-p w-full justify-center" disabled={!esAprob || ej.consolidadoPreaprobado || !todas || abiertos > 0 || !ej.preinforme} onClick={() => { const e = preaprobar(); toast(e ?? "Consolidado pre-aprobado · se habilitó el acceso de auditoría externa", e ? "ko" : "ok"); }}><ShieldCheck size={14} /> Pre-aprobar consolidado</button>
@@ -216,7 +223,7 @@ function Consolidado() {
             </div>
           </div>
           <div className="bg-panel border border-rule">
-            <div className="px-4 h-11 flex items-center border-b border-rule font-medium text-[13px]">Observaciones del proceso</div>
+            <div className="px-5 h-14 flex items-center border-b border-rule font-bold text-[15px]">Observaciones del proceso</div>
             <div className="max-h-[320px] overflow-auto"><HiloComentarios comentarios={ej.comentarios.filter((c) => c.instancia !== "Directorio")} puedeResponder={false} /></div>
           </div>
         </div>
@@ -245,8 +252,8 @@ function Historial() {
   const filas = log.filter((e) => e.track === "Pre-aprobación" && e.ejercicio === ej.periodo);
   return (
     <div className="bg-panel border border-rule">
-      <div className="px-4 h-11 flex items-center justify-between border-b border-rule">
-        <span className="font-medium text-[13px]">Historial de revisiones y aprobaciones</span>
+      <div className="px-5 h-14 flex items-center justify-between border-b border-rule">
+        <span className="font-bold text-[15px]">Historial de revisiones y aprobaciones</span>
         <button className="btn btn-sm" onClick={() => descargarXlsx(`historial_preaprobacion_${ej.periodo.replace(" ", "")}.xlsx`, [{ nombre: "Historial", filas: [["Fecha", "Usuario", "Perfil", "Objeto", "Acción", "Versión", "Justificación"], ...filas.map((e) => [fechaHora(e.fecha), usuario(e.usuario).nombre, e.perfil, e.objeto, e.accion, e.version ?? "", e.justificacion ?? ""])], anchos: [16, 22, 22, 18, 50, 10, 40] }])}><Download size={13} /> Exportar</button>
       </div>
       <div className="overflow-x-auto"><table className="tbl">
@@ -346,11 +353,11 @@ export function Revision() {
 
   return (
     <div>
-      <div className="px-6 pt-4 pb-4 bg-panel border-b border-rule">
+      <div className="px-6 pt-5 pb-2">
         <button className="text-[11.5px] text-ink3 hover:text-ink flex items-center gap-1 mb-1" onClick={() => nav("/preaprobacion")}><ArrowLeft size={12} /> Bandeja del aprobador</button>
         <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
           <div className="min-w-0">
-            <h1 className="text-[21px] font-semibold tracking-[-0.01em]">Revisión · Nota {n} · {def.titulo}</h1>
+            <h1 className="text-[26px] font-bold tracking-[-0.01em]">Revisión · Nota {n} · {def.titulo}</h1>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-[12px] text-ink2">
               <EstadoNotaTag estado={nota.estado} />
               <span className="flex items-center gap-1"><Lock size={12} /> Versión congelada v{nota.version}{vCongelada ? ` · ${fechaHora(nota.enviadaEl ?? vCongelada.fecha)}` : ""}</span>
@@ -359,8 +366,8 @@ export function Revision() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex border border-rule mr-2">
-              <button onClick={() => setModo("traza")} className={`px-3 h-[30px] text-[12px] whitespace-nowrap ${modo === "traza" ? "bg-ink text-white" : ""}`}>Trazar cifras</button>
-              <button onClick={() => setModo("comentar")} className={`px-3 h-[30px] text-[12px] whitespace-nowrap ${modo === "comentar" ? "bg-ink text-white" : ""}`}>Comentar celdas</button>
+              <button onClick={() => setModo("traza")} className={`px-3 h-[30px] text-[12px] whitespace-nowrap ${modo === "traza" ? "bg-accent text-white" : ""}`}>Trazar cifras</button>
+              <button onClick={() => setModo("comentar")} className={`px-3 h-[30px] text-[12px] whitespace-nowrap ${modo === "comentar" ? "bg-accent text-white" : ""}`}>Comentar celdas</button>
             </div>
             <button className="btn" disabled={!puedeComentar} onClick={() => setComp({})}><MessageSquarePlus size={14} /> Comentar nota</button>
             <button className="btn" disabled={!esAprob} onClick={() => setDev(true)}><CornerUpLeft size={14} /> Devolver</button>
@@ -380,7 +387,7 @@ export function Revision() {
           {modo === "comentar" && <div className="text-[11.5px] px-3 py-2 border border-dashed border-accent text-accent bg-accentSoft">{puedeComentar ? "Modo comentario: selecciona una cifra para dejar una observación en esa celda." : "Tu perfil puede revisar la nota, pero no registrar observaciones en ella."}</div>}
           {nota.texto && (
             <div className="bg-panel border border-rule">
-              <div className="px-4 h-10 flex items-center border-b border-rule font-medium text-[12.5px]">Texto de la nota</div>
+              <div className="px-5 h-14 flex items-center border-b border-rule font-bold text-[14px]">Texto de la nota</div>
               <div className="px-4 py-3 text-[12.5px] whitespace-pre-wrap leading-[1.65]">{nota.texto}</div>
             </div>
           )}
@@ -393,14 +400,14 @@ export function Revision() {
           {nota.cuadros.length > 0 && <PanelControles controles={nota.controles} animar={false} />}
           {nota.ajustes.length > 0 && (
             <div className="bg-panel border border-rule">
-              <div className="px-4 h-10 flex items-center border-b border-rule font-medium text-[12.5px]">Ajustes manuales aplicados</div>
+              <div className="px-5 h-14 flex items-center border-b border-rule font-bold text-[14px]">Ajustes manuales aplicados</div>
               <div className="overflow-x-auto"><table className="tbl"><thead><tr><th>Celda</th><th className="num">Monto</th><th>Justificación</th><th>Usuario</th></tr></thead>
                 <tbody>{nota.ajustes.map((a) => <tr key={a.id}><td>{nota.cuadros.find((c) => c.id === a.cuadro)?.lineas.find((l) => l.id === a.linea)?.label}</td><td className="num">{miles(a.monto)}</td><td className="text-ink2">{a.justificacion}</td><td>{usuario(a.usuario).nombre}</td></tr>)}</tbody></table></div>
             </div>
           )}
         </div>
         <div className="bg-panel border border-rule xl:sticky xl:top-4">
-          <div className="px-4 h-10 flex items-center justify-between border-b border-rule"><span className="font-medium text-[12.5px]">Observaciones</span><span className="text-[11.5px] text-ink3">{abiertos} abiertas</span></div>
+          <div className="px-5 h-14 flex items-center justify-between border-b border-rule"><span className="font-bold text-[14px]">Observaciones</span><span className="text-[11.5px] text-ink3">{abiertos} abiertas</span></div>
           <div className="max-h-[60vh] overflow-auto"><HiloComentarios comentarios={coment} nota={nota} def={def} puedeResponder={false} /></div>
         </div>
       </div>

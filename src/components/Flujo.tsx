@@ -47,7 +47,7 @@ export function FlujoNotas({ ej, pack, alto = 170 }: { ej: Ejercicio; pack: Indu
                       transition={{ type: "spring", stiffness: 260, damping: 30 }}
                       onClick={() => nav(`/notas/${n.n}`)}
                       title={`Nota ${n.n} · ${pack.notas.find((d) => d.n === n.n)?.titulo} · ${n.estado}`}
-                      className={`relative w-[26px] h-[26px] text-[10px] tnum font-medium flex items-center justify-center ${n.estado === "Pendiente de fuentes" ? "hatch" : ""}`}
+                      className={`relative w-[26px] h-[26px] rounded-[5px] text-[10px] tnum font-medium flex items-center justify-center ${n.estado === "Pendiente de fuentes" ? "hatch" : ""}`}
                       style={{ background: n.estado === "Pendiente de fuentes" ? undefined : s.fill, border: `1px solid ${s.border}`, color: n.estado === "Aprobada" ? "white" : "var(--ink)" }}
                     >
                       {n.n}

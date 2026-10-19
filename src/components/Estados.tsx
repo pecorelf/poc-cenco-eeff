@@ -151,7 +151,7 @@ export function EstadosFinancieros() {
         <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2 border-b border-rule">
           <div className="flex flex-wrap border border-rule">
             {estados.map((x) => (
-              <button key={x.id} onClick={() => setSel(x.id)} className={`px-3 h-8 text-[12px] whitespace-nowrap ${sel === x.id ? "bg-ink text-white" : "hover:bg-paper"}`}>{x.corto}</button>
+              <button key={x.id} onClick={() => setSel(x.id)} className={`px-3 h-8 text-[12px] whitespace-nowrap ${sel === x.id ? "bg-accent text-white" : "hover:bg-paper"}`}>{x.corto}</button>
             ))}
           </div>
           <button className="btn btn-sm" onClick={() => { exportarEstados(estados, soc, ej.periodo); registrar({ track: "Generación de notas", objeto: "Estados financieros", accion: "Exportación Excel" }); }}><Download size={13} /> Exportar los 4 estados</button>

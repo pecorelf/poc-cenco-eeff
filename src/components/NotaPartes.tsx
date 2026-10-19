@@ -53,7 +53,7 @@ export function TablaCuadro({
   return (
     <div id={idAncla} className={`bg-panel border scroll-mt-4 ${edicion ? "border-[color:var(--accent-3)]" : "border-rule"}`}>
       <div className="flex flex-wrap items-center justify-between gap-2 px-4 min-h-10 py-2 border-b border-rule">
-        <div className="font-medium text-[12.5px]">{c.titulo}</div>
+        <div className="font-bold text-[14px]">{c.titulo}</div>
         <div className="text-[11px] text-ink3 flex items-center gap-3">
           {edicion && cambiadas > 0 && <span className="font-medium" style={{ color: "var(--accent-3)" }}>{cambiadas} monto{cambiadas > 1 ? "s" : ""} en capa provisoria</span>}
           <span>M$ · estructura fija</span>
@@ -181,8 +181,8 @@ export function PanelControles({ controles, animar = true, onTrazar }: { control
   const ko = controles.filter((c) => c.bloqueante && c.dif !== 0).length;
   return (
     <div className="bg-panel border border-rule">
-      <div className="flex items-center justify-between px-4 h-10 border-b border-rule">
-        <div className="font-medium text-[12.5px]">Controles y cuadraturas</div>
+      <div className="flex items-center justify-between px-5 h-14 border-b border-rule">
+        <div className="font-bold text-[14px]">Controles y cuadraturas</div>
         <div className="text-[11.5px]">{paso >= controles.length ? (ko ? <span className="text-ko font-medium">{ko} bloqueante{ko > 1 ? "s" : ""} con diferencia</span> : <span className="text-ok font-medium">Todos los bloqueantes OK</span>) : <span className="text-ink3">Verificando…</span>}</div>
       </div>
       <div className="overflow-x-auto"><table className="tbl">
@@ -423,7 +423,7 @@ export function Versiones({ nota }: { nota: NotaRun }) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)] gap-4">
       <div className="bg-panel border border-rule">
-        <div className="px-4 h-10 flex items-center border-b border-rule font-medium text-[12.5px]">Historial</div>
+        <div className="px-5 h-14 flex items-center border-b border-rule font-bold text-[14px]">Historial</div>
         {[...vs].reverse().map((v) => {
           const i = vs.indexOf(v);
           return (
@@ -442,7 +442,7 @@ export function Versiones({ nota }: { nota: NotaRun }) {
         })}
       </div>
       <div className="bg-panel border border-rule">
-        <div className="px-4 h-10 flex items-center gap-2 border-b border-rule font-medium text-[12.5px]"><GitCompare size={14} /> Comparación v{va.v} → v{vb.v}</div>
+        <div className="px-5 h-14 flex items-center gap-2 border-b border-rule font-bold text-[14px]"><GitCompare size={14} /> Comparación v{va.v} → v{vb.v}</div>
         <div className="overflow-x-auto"><table className="tbl">
           <thead><tr><th>Línea</th><th className="num">v{va.v}</th><th className="num">v{vb.v}</th><th className="num">Diferencia</th></tr></thead>
           <tbody>
@@ -500,8 +500,8 @@ export function VistaIntermedia({ nota, def, ej }: { nota: NotaRun; def: NotaDef
   }
   return (
     <div className="bg-panel border border-rule">
-      <div className="flex items-center justify-between px-4 h-10 border-b border-rule">
-        <div className="font-medium text-[12.5px]">{titulo}</div>
+      <div className="flex items-center justify-between px-5 h-14 border-b border-rule">
+        <div className="font-bold text-[14px]">{titulo}</div>
         <div className="text-[11px] text-ink3">Vista de trabajo · no se publica · mismas fuentes y versión v{nota.version}</div>
       </div>
       <div className="overflow-x-auto"><table className="tbl">

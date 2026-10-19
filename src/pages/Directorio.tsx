@@ -107,7 +107,7 @@ export default function Directorio() {
             <div className="space-y-4">
               {ej.directorio.estado === "aprobado" && ej.directorio.acta && (
                 <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="bg-panel border border-accent">
-                  <div className="px-4 h-10 flex items-center border-b border-rule font-medium text-[12.5px]">Acta de aprobación</div>
+                  <div className="px-5 h-14 flex items-center border-b border-rule font-bold text-[14px]">Acta de aprobación</div>
                   {ej.directorio.acta.map((a, i) => (
                     <motion.div key={a.nivel} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 + i * 0.18 }} className="px-4 py-2 border-b border-rule2 text-[12px] flex items-center gap-2">
                       <Avatar id={a.nombre} size={20} />
@@ -120,15 +120,15 @@ export default function Directorio() {
                 </motion.div>
               )}
               <div className="bg-panel border border-rule">
-                <div className="px-4 h-10 flex items-center justify-between border-b border-rule">
-                  <span className="font-medium text-[12.5px] flex items-center gap-2"><span className="w-2 h-2 rounded-full" style={{ background: "var(--accent-3)" }} /> Observaciones del Directorio</span>
+                <div className="px-5 h-14 flex items-center justify-between border-b border-rule">
+                  <span className="font-bold text-[14px] flex items-center gap-2"><span className="w-2 h-2 rounded-full" style={{ background: "var(--accent-3)" }} /> Observaciones del Directorio</span>
                   <span className="text-[11.5px] text-ink3">{abiertas.length} abiertas</span>
                 </div>
                 <HiloComentarios comentarios={obsDir} puedeResponder={esProc} />
               </div>
               {esProc && ej.directorio.estado === "devuelto" && abiertas.length > 0 && (
                 <div className="bg-panel border border-rule">
-                  <div className="px-4 h-10 flex items-center border-b border-rule font-medium text-[12.5px]">Distribuir observaciones a las notas</div>
+                  <div className="px-5 h-14 flex items-center border-b border-rule font-bold text-[14px]">Distribuir observaciones a las notas</div>
                   {abiertas.map((c) => {
                     const nn = c.nota ? ej.notas.find((x) => x.n === c.nota) : undefined;
                     return (

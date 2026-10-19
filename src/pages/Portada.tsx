@@ -5,6 +5,7 @@ import { Plus, SlidersHorizontal, ChevronRight, Download, AlertTriangle, Lock } 
 import { useApp } from "../engine/store";
 import { Encabezado } from "../components/Shell";
 import { FlujoNotas } from "../components/Flujo";
+import { Buscador, Filtros, CabeceraListado, normalizar } from "../components/Listado";
 import { Label, Num, EstadoNotaTag, Semaforo, Modal, Avatar, usePerfiles, tiene, OkKo } from "../components/ui";
 import { porEstado, proximoHito, pendientesCarga, aprobacionesPendientes, misPendientes, TRACKS } from "../engine/derivados";
 import { ESTADOS_EJERCICIO, ESTADOS_NOTA, type EstadoNota, type TipoNota } from "../engine/types";
@@ -19,12 +20,12 @@ function EstadoEEFF() {
   const sig = ESTADOS_EJERCICIO[idx + 1];
   return (
     <span className="group relative inline-flex items-center gap-2 align-middle">
-      <span className="inline-flex items-center gap-1.5 h-[24px] px-2.5 text-[12px] font-medium text-white whitespace-nowrap" style={{ background: ej.estado === "Cerrado" ? "var(--ink-2)" : "var(--accent)" }}>
+      <span className="inline-flex items-center gap-1.5 h-[28px] px-3 rounded-md text-[12.5px] font-semibold text-white whitespace-nowrap" style={{ background: ej.estado === "Cerrado" ? "var(--ink-2)" : "var(--accent)" }}>
         <span className="w-1.5 h-1.5 rounded-full bg-white" />
         {ej.estado}
       </span>
       <span className="text-[11.5px] text-ink3 whitespace-nowrap tnum">Etapa {idx + 1} de {ESTADOS_EJERCICIO.length}{sig ? ` · sigue ${sig}` : ""}</span>
-      <span className="pointer-events-none absolute left-0 top-8 z-30 hidden group-hover:block bg-panel border border-rule px-3 py-2 w-[260px]">
+      <span className="pointer-events-none absolute left-0 top-9 z-30 hidden group-hover:block bg-panel rounded-xl shadow-[0_12px_32px_rgba(20,28,45,0.18)] px-4 py-3 w-[270px]">
         {ESTADOS_EJERCICIO.map((e, i) => (
           <span key={e} className="flex items-center gap-2 text-[11.5px] py-[2px]" style={{ color: i === idx ? "var(--accent)" : i < idx ? "var(--ink-2)" : "var(--ink-3)", fontWeight: i === idx ? 600 : 400 }}>
             <span className="w-[7px] h-[7px] border" style={{ background: i <= idx ? "var(--accent)" : "transparent", borderColor: i <= idx ? "var(--accent)" : "var(--ink-3)" }} />
@@ -78,32 +79,30 @@ function Tablero() {
   const ej = useApp((s) => s.ej());
   const pack = useApp((s) => s.pack());
   const nav = useNavigate();
-  const [fEstado, setFEstado] = useState<EstadoNota | "">("");
-  const [fTipo, setFTipo] = useState<TipoNota | "">("");
-  const [fResp, setFResp] = useState("");
+  const [fEstados, setFEstados] = useState<string[]>([]);
+  const [fTipos, setFTipos] = useState<string[]>([]);
+  const [fResps, setFResps] = useState<string[]>([]);
+  const [q, setQ] = useState("");
   const pe = porEstado(ej);
-  const filas = ej.notas.filter((n) => (!fEstado || n.estado === fEstado) && (!fTipo || pack.notas.find((d) => d.n === n.n)!.tipo === fTipo) && (!fResp || n.responsable === fResp));
-  const responsables = [...new Set(ej.notas.map((n) => n.responsable))];
+  const filas = ej.notas.filter((n) => {
+    const d = pack.notas.find((x) => x.n === n.n)!;
+    return (!fEstados.length || fEstados.includes(n.estado)) && (!fTipos.length || fTipos.includes(d.tipo)) && (!fResps.length || fResps.includes(usuario(n.responsable).nombre)) && (!q || normalizar(`${n.n} ${d.titulo}`).includes(normalizar(q)));
+  });
+  const responsables = [...new Set(ej.notas.map((n) => usuario(n.responsable).nombre))];
+  const fEstado = fEstados.length === 1 ? fEstados[0] : "";
   return (
     <div className="bg-panel border border-rule">
-      <div className="flex items-center gap-3 px-4 h-11 border-b border-rule">
-        <div className="font-medium text-[13px] mr-auto">Estado de las notas</div>
-        <select className="inp !w-auto !h-7 text-[12px]" value={fEstado} onChange={(e) => setFEstado(e.target.value as EstadoNota)}>
-          <option value="">Todos los estados</option>
-          {ESTADOS_NOTA.map((e) => <option key={e}>{e}</option>)}
-        </select>
-        <select className="inp !w-auto !h-7 text-[12px]" value={fTipo} onChange={(e) => setFTipo(e.target.value as TipoNota)}>
-          <option value="">Todos los tipos</option>
-          <option>Automática</option><option>Híbrida</option><option>Texto</option>
-        </select>
-        <select className="inp !w-auto !h-7 text-[12px]" value={fResp} onChange={(e) => setFResp(e.target.value)}>
-          <option value="">Todos los responsables</option>
-          {responsables.map((r) => <option key={r} value={r}>{usuario(r).nombre}</option>)}
-        </select>
-      </div>
+      <CabeceraListado titulo="Estado de las notas">
+        <Buscador valor={q} onChange={setQ} placeholder="Buscar notas por nombre o número" />
+        <Filtros grupos={[
+          { titulo: "Estado", opciones: ESTADOS_NOTA, seleccion: fEstados, onChange: setFEstados },
+          { titulo: "Tipo de nota", opciones: ["Automática", "Híbrida", "Texto"], seleccion: fTipos, onChange: setFTipos },
+          { titulo: "Responsable", opciones: responsables, seleccion: fResps, onChange: setFResps }
+        ]} />
+      </CabeceraListado>
       <div className="flex border-b border-rule text-[11.5px]">
         {ESTADOS_NOTA.map((e) => (
-          <button key={e} onClick={() => setFEstado(fEstado === e ? "" : e)} className={`flex-1 px-3 py-2 text-left border-r border-rule2 last:border-r-0 ${fEstado === e ? "bg-accentSoft" : "hover:bg-paper"}`}>
+          <button key={e} onClick={() => setFEstados(fEstado === e ? [] : [e])} className={`flex-1 px-3 py-2 text-left border-r border-rule2 last:border-r-0 ${fEstado === e ? "bg-accentSoft" : "hover:bg-paper"}`}>
             <div className="text-ink3 truncate">{e}</div>
             <div className="text-[17px] font-semibold tnum text-ink">{pe[e]}</div>
           </button>
@@ -157,8 +156,8 @@ function Pendientes() {
   const items = misPendientes(ej, pack, uid, perfiles);
   return (
     <div className="bg-panel border border-rule">
-      <div className="flex items-center justify-between px-4 h-11 border-b border-rule">
-        <div className="font-medium text-[13px]">Mis pendientes</div>
+      <div className="flex items-center justify-between px-5 h-14 border-b border-rule">
+        <div className="font-bold text-[15px]">Mis pendientes</div>
         <span className="text-[12px] tnum text-ink2">{items.length}</span>
       </div>
       <div className="max-h-[300px] overflow-auto divide-y divide-rule2">
@@ -421,7 +420,7 @@ export default function Portada() {
         </>}
       />
 
-      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-[1fr_1fr_1fr_1fr_1.35fr] bg-panel border-b border-rule [&>*]:border-b [&>*]:border-rule xl:[&>*]:border-b-0">
+      <div className="mx-6 mt-5 grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-[1fr_1fr_1fr_1fr_1.35fr] bg-panel border border-rule [&>*]:border-b [&>*]:border-rule xl:[&>*]:border-b-0">
         {kpis.map((k, i) => (
           <motion.div key={k.label} {...d(i + 1)} className="px-6 py-4 border-r border-rule">
             <Label>{k.label}</Label>
@@ -447,10 +446,10 @@ export default function Portada() {
         </motion.div>
       </div>
 
-      <motion.div {...d(6)} className="bg-panel border-b border-rule">
+      <motion.div {...d(6)} className="mx-6 mt-5 bg-panel border border-rule">
         <div className="flex items-center justify-between px-6 pt-4">
           <div>
-            <div className="font-medium text-[13px]">Recorrido de las {total} notas</div>
+            <div className="font-bold text-[15px]">Recorrido de las {total} notas</div>
             <div className="text-[11.5px] text-ink3">Cada cuadro es una nota en la etapa en que está. Se mueve al cambiar de estado.</div>
           </div>
           <div className="flex items-center gap-4 text-[11px] text-ink2">

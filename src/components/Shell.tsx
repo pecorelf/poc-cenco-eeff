@@ -1,9 +1,9 @@
 import { useState, type ReactNode } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
-import { Bot, ChevronDown, LogOut, ScrollText, Settings2, Check, RefreshCcw } from "lucide-react";
+import { Bot, ChevronDown, LogOut, ScrollText, Settings2, Check, RefreshCcw, Bell, AlertCircle, Info } from "lucide-react";
 import { useApp } from "../engine/store";
-import { TRACKS, etapaIndice, pendientesCarga, porEstado, aprobacionesPendientes } from "../engine/derivados";
+import { TRACKS, etapaIndice, pendientesCarga, porEstado, aprobacionesPendientes, misPendientes } from "../engine/derivados";
 import { USUARIOS, usuario, correo } from "../config/users";
 import { PERFIL_NOMBRE } from "../engine/types";
 import { DeloitteLogo, ClienteMarca, Avatar, usePerfiles, tiene, Toasts } from "./ui";
@@ -58,16 +58,16 @@ function Riel() {
             <NavLink key={t.id} to={t.ruta} className="relative flex items-center gap-3 pl-[20px] pr-3 group" style={{ height: pasoAlto }}>
               {({ isActive }) => (
                 <>
-                  {isActive && <motion.span layoutId="navsel" className="absolute inset-y-1 left-1.5 right-1.5 bg-panel border border-rule" transition={{ duration: 0.2 }} />}
-                  <span className="relative z-[1] w-[15px] h-[15px] flex items-center justify-center" style={{ background: hecho ? "var(--accent)" : "var(--paper)", border: `1px solid ${hecho || actual ? "var(--accent)" : "var(--ink-3)"}` }}>
+                  {isActive && <motion.span layoutId="navsel" className="absolute inset-y-1 left-2 right-2 bg-accentSoft rounded-lg" transition={{ duration: 0.2 }} />}
+                  <span className="relative z-[1] w-[16px] h-[16px] rounded-full flex items-center justify-center" style={{ background: hecho ? "var(--accent)" : "var(--panel)", border: `1.5px solid ${hecho || actual ? "var(--accent)" : "#b8bec8"}` }}>
                     {hecho && <Check size={10} color="white" strokeWidth={3} />}
-                    {actual && <span className="w-[5px] h-[5px] live-dot" style={{ background: "var(--accent)" }} />}
+                    {actual && <span className="w-[6px] h-[6px] rounded-full live-dot" style={{ background: "var(--accent)" }} />}
                   </span>
                   <span className="relative z-[1] flex-1 leading-tight">
                     <span className="block text-[10.5px] text-ink3 tnum">{t.n}</span>
-                    <span className={`block text-[12.5px] whitespace-nowrap ${isActive ? "font-medium text-ink" : "text-ink2 group-hover:text-ink"}`}>{t.nombre}</span>
+                    <span className={`block text-[12.5px] whitespace-nowrap ${isActive ? "font-semibold text-accent" : "font-medium text-ink2 group-hover:text-ink"}`}>{t.nombre}</span>
                   </span>
-                  {c > 0 && <span className="relative z-[1] text-[11px] tnum text-ink2 min-w-[20px] text-right">{c}</span>}
+                  {c > 0 && <span className="relative z-[1] text-[11px] font-semibold tnum min-w-[22px] h-[20px] px-1.5 rounded-full inline-flex items-center justify-center" style={{ background: isActive ? "var(--accent)" : "var(--head)", color: isActive ? "white" : "var(--ink-2)" }}>{c}</span>}
                 </>
               )}
             </NavLink>
@@ -75,6 +75,52 @@ function Riel() {
         })}
       </div>
     </nav>
+  );
+}
+
+function BanderaChile() {
+  return (
+    <svg width="26" height="17" viewBox="0 0 30 20" className="rounded-[2px] shadow-[0_0_0_1px_rgba(0,0,0,0.08)] shrink-0" aria-hidden>
+      <rect width="30" height="10" fill="#ffffff" /><rect y="10" width="30" height="10" fill="#d52b1e" /><rect width="10" height="10" fill="#0039a6" />
+      <polygon points="5,2.2 5.9,4.6 8.4,4.6 6.4,6.1 7.1,8.5 5,7.1 2.9,8.5 3.6,6.1 1.6,4.6 4.1,4.6" fill="#ffffff" />
+    </svg>
+  );
+}
+
+function Campana() {
+  const [open, setOpen] = useState(false);
+  const ej = useApp((s) => s.ej());
+  const pack = useApp((s) => s.pack());
+  const uid = useApp((s) => s.usuarioId)!;
+  const perfiles = usePerfiles();
+  const nav = useNavigate();
+  const items = misPendientes(ej, pack, uid, perfiles);
+  return (
+    <div className="relative shrink-0">
+      <button className="relative w-9 h-9 rounded-full flex items-center justify-center text-ink2 hover:bg-head" onClick={() => setOpen(!open)} aria-label="Notificaciones">
+        <Bell size={19} />
+        {items.length > 0 && <span className="absolute top-1 right-1 min-w-[16px] h-[16px] px-1 rounded-full text-[9.5px] font-bold text-white flex items-center justify-center" style={{ background: "var(--ko)" }}>{items.length}</span>}
+      </button>
+      <AnimatePresence>
+        {open && (
+          <>
+            <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
+            <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="absolute right-0 top-11 z-40 w-[380px] bg-panel rounded-xl shadow-[0_12px_32px_rgba(20,28,45,0.18)] overflow-hidden">
+              <div className="px-4 pt-3 pb-2 font-bold text-[14px]">Notificaciones</div>
+              {items.length === 0 && <div className="px-4 pb-4 text-[12.5px] text-ink3">No tienes pendientes en este ejercicio.</div>}
+              <div className="max-h-[360px] overflow-auto">
+                {items.map((p) => (
+                  <button key={p.id} onClick={() => { setOpen(false); nav(p.ruta); }} className="w-full flex items-start gap-3 px-4 py-2.5 text-left hover:bg-accentSoft">
+                    {p.tipo === "Control KO" || p.tipo === "Corregir" ? <AlertCircle size={18} className="text-ko shrink-0 mt-0.5" /> : <Info size={18} className="text-accent shrink-0 mt-0.5" />}
+                    <span className="min-w-0"><span className="block text-[12.5px] font-semibold text-ink">{p.tipo}</span><span className="block text-[12px] text-ink2 truncate">{p.texto}</span></span>
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
 
@@ -90,28 +136,35 @@ function SelectorEjercicio() {
   const puedeCrear = tiene(usePerfiles(), "proceso", "admin");
   return (
     <div className="relative min-w-0 shrink">
-      <button className="flex items-center gap-2 h-8 px-3 border border-rule bg-panel hover:border-ink3 min-w-0 max-w-full whitespace-nowrap" onClick={() => setOpen(!open)} title={`${ej.periodo} · ${soc(ej.sociedad)} · ${ej.estado}`}>
-        <span className="font-semibold tnum shrink-0">{ej.periodo}</span>
-        <span className="text-ink2 truncate min-w-0 hidden md:inline">{soc(ej.sociedad)}</span>
-        <span className="text-ink3 hidden lg:inline">·</span>
-        <span className="text-[12px] shrink-0 hidden lg:inline" style={{ color: ej.historico ? "var(--ink-3)" : "var(--accent)" }}>{ej.estado}</span>
-        <ChevronDown size={14} className="text-ink3 shrink-0" />
-      </button>
+      <div className="flex items-center gap-2 min-w-0">
+        <button className="flex items-center gap-2 h-9 pl-2.5 pr-2 border border-[#9aa3b2] rounded-lg bg-panel hover:border-accent whitespace-nowrap shrink-0" onClick={() => setOpen(!open)} title="Sociedad y país">
+          <BanderaChile />
+          <span className="text-[12.5px] font-medium text-ink2 hidden md:inline">CL</span>
+          <ChevronDown size={15} className="text-ink2" />
+        </button>
+        <button className="flex items-center gap-2 h-9 px-3 border border-[#9aa3b2] rounded-lg bg-panel hover:border-accent min-w-0 max-w-full whitespace-nowrap" onClick={() => setOpen(!open)} title={`${ej.periodo} · ${soc(ej.sociedad)} · ${ej.estado}`}>
+          <span className="text-[12.5px] font-medium text-ink truncate min-w-0 hidden md:inline">{soc(ej.sociedad)}</span>
+          <span className="w-px h-4 bg-rule hidden md:inline" />
+          <span className="text-[12.5px] font-semibold tnum shrink-0">{ej.periodo}</span>
+          <span className="text-[11.5px] shrink-0 hidden xl:inline" style={{ color: ej.historico ? "var(--ink-3)" : "var(--accent)" }}>{ej.estado}</span>
+          <ChevronDown size={15} className="text-ink2 shrink-0" />
+        </button>
+      </div>
       <AnimatePresence>
         {open && (
           <>
             <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
-            <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="absolute left-0 top-9 z-40 w-[380px] bg-panel border border-rule">
-              <div className="px-3 pt-3 pb-1 sc text-[11px]">Ejercicios abiertos</div>
+            <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="absolute left-0 top-11 z-40 w-[400px] bg-panel rounded-xl shadow-[0_12px_32px_rgba(20,28,45,0.18)] overflow-hidden">
+              <div className="px-4 pt-3 pb-1 sc">Ejercicios abiertos</div>
               {ejercicios.map((e) => (
-                <button key={e.id} className="w-full flex items-center justify-between px-3 h-9 hover:bg-paper text-left" onClick={() => { sel(e.id); setOpen(false); }}>
+                <button key={e.id} className="w-full flex items-center justify-between px-4 h-10 hover:bg-accentSoft text-left" onClick={() => { sel(e.id); setOpen(false); }}>
                   <span><span className="font-medium tnum mr-2">{e.periodo}</span>{soc(e.sociedad)}</span>
                   <span className="text-[12px] text-ink2">{e.estado}</span>
                 </button>
               ))}
               <div className="border-t border-rule flex">
-                <button className="flex-1 h-9 text-[12.5px] hover:bg-paper" onClick={() => { setOpen(false); nav("/inicio?historicos=1"); }}>Ejercicios históricos</button>
-                {puedeCrear && <button className="flex-1 h-9 text-[12.5px] border-l border-rule hover:bg-paper" onClick={() => { setOpen(false); nav("/inicio?nuevo=1"); }}>Nuevo ejercicio</button>}
+                <button className="flex-1 h-10 text-[12.5px] font-semibold text-accent hover:bg-accentSoft" onClick={() => { setOpen(false); nav("/inicio?historicos=1"); }}>Ejercicios históricos</button>
+                {puedeCrear && <button className="flex-1 h-10 text-[12.5px] font-semibold text-accent border-l border-rule hover:bg-accentSoft" onClick={() => { setOpen(false); nav("/inicio?nuevo=1"); }}>Nuevo ejercicio</button>}
               </div>
             </motion.div>
           </>
@@ -131,19 +184,18 @@ function MenuUsuario() {
   const u = usuario(uid);
   return (
     <div className="relative shrink-0">
-      <button className="flex items-center gap-2 h-8 pl-1 pr-2 hover:bg-rule2" onClick={() => setOpen(!open)}>
-        <Avatar id={uid} size={24} />
-        <span className="text-left leading-tight hidden md:block whitespace-nowrap">
-          <span className="block text-[12px] font-medium">{u.nombre}</span>
-          <span className="block text-[10.5px] text-ink3 hidden xl:block">{u.perfiles.map((p) => PERFIL_NOMBRE[p]).join(" · ")}</span>
+      <button className="flex items-center gap-3 h-10 pl-3 pr-1 rounded-lg hover:bg-head" onClick={() => setOpen(!open)}>
+        <span className="text-right leading-tight hidden md:block whitespace-nowrap">
+          <span className="block text-[11px] text-ink3 hidden xl:block">{PERFIL_NOMBRE[u.perfiles[0]]}</span>
+          <span className="block text-[13px] font-semibold text-ink max-w-[170px] truncate">{u.nombre}</span>
         </span>
-        <ChevronDown size={13} className="text-ink3" />
+        <Avatar id={uid} size={34} />
       </button>
       <AnimatePresence>
         {open && (
           <>
             <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
-            <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="absolute right-0 top-9 z-40 w-[340px] bg-panel border border-rule">
+            <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="absolute right-0 top-12 z-40 w-[340px] bg-panel rounded-xl shadow-[0_12px_32px_rgba(20,28,45,0.18)] overflow-hidden">
               <div className="px-3 py-2 border-b border-rule text-[11.5px] text-ink3">{correo(uid, dominio)}</div>
               <div className="px-3 pt-2 pb-1 sc text-[11px]">Cambiar de usuario (demo)</div>
               {USUARIOS.map((x) => (
@@ -175,25 +227,27 @@ export function Shell({ children }: { children: ReactNode }) {
   const perfiles = usePerfiles();
   return (
     <div className="h-full flex flex-col">
-      <header className="h-12 shrink-0 flex items-center gap-3 xl:gap-4 px-4 bg-panel border-b border-rule min-w-0">
+      <header className="h-[60px] shrink-0 flex items-center gap-3 xl:gap-4 px-5 bg-panel border-b border-rule min-w-0 shadow-[0_1px_0_rgba(20,28,45,0.04)]">
         <span className="shrink-0"><DeloitteLogo h={22} /></span>
         <span className="w-px h-6 bg-rule shrink-0" />
-        <span className="text-[12.5px] font-medium text-ink2 whitespace-nowrap hidden xl:inline">Cierre EEFF y Notas</span>
+        <span className="text-[15px] font-bold text-ink whitespace-nowrap hidden xl:inline">Cierre EEFF y Notas</span>
         <SelectorEjercicio />
         {ej.historico && <span className="text-[11.5px] text-ink3 whitespace-nowrap hidden 2xl:inline">Solo lectura · cerrado el {fechaCorta(ej.aprobadoEl ?? ej.fechaCierre)}</span>}
         <div className="flex-1" />
         <button className={`btn btn-sm shrink-0 ${asistente ? "btn-d" : ""}`} onClick={() => setAsistente(!asistente)} title="Agente del proceso">
           <Bot size={14} /> <span className="hidden lg:inline">Agente del proceso</span>
         </button>
+        <Campana />
+        <span className="w-px h-8 bg-rule shrink-0" />
         <MenuUsuario />
-        <span className="w-px h-6 bg-rule shrink-0" />
+        <span className="w-px h-8 bg-rule shrink-0" />
         <span className="shrink-0"><ClienteMarca h={34} /></span>
       </header>
       <div className="flex-1 flex min-h-0">
-        <aside className="w-[200px] xl:w-[244px] shrink-0 border-r border-rule flex flex-col bg-paper">
+        <aside className="w-[210px] xl:w-[250px] shrink-0 border-r border-rule flex flex-col bg-panel">
           <Riel />
           <div className="mx-4 my-3 border-t border-rule" />
-          <NavLink to="/auditoria" className={({ isActive }) => `mx-1.5 flex items-center gap-2.5 px-[14px] h-9 text-[12.5px] ${isActive ? "bg-panel border border-rule font-medium" : "text-ink2 hover:text-ink border border-transparent"}`}>
+          <NavLink to="/auditoria" className={({ isActive }) => `mx-2 flex items-center gap-2.5 px-[14px] h-10 rounded-lg text-[12.5px] ${isActive ? "bg-accentSoft text-accent font-semibold" : "text-ink2 font-medium hover:text-ink"}`}>
             <ScrollText size={14} /> Log de auditoría
           </NavLink>
           <div className="flex-1" />
@@ -218,14 +272,14 @@ export function Shell({ children }: { children: ReactNode }) {
 
 export function Encabezado({ n, titulo, sub, acciones, tag }: { n?: string; titulo: string; sub?: ReactNode; acciones?: ReactNode; tag?: ReactNode }) {
   return (
-    <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3 px-6 pt-5 pb-4 border-b border-rule bg-panel">
+    <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3 px-6 pt-6 pb-1">
       <div className="min-w-0">
-        {n && <div className="text-[11px] text-ink3 tnum mb-0.5">Track {n}</div>}
+        {n && <div className="text-[11.5px] font-semibold text-accent tnum mb-1">Track {n}</div>}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <h1 className="text-[21px] font-semibold tracking-[-0.01em] leading-tight">{titulo}</h1>
+          <h1 className="text-[26px] font-bold tracking-[-0.01em] leading-tight">{titulo}</h1>
           {tag}
         </div>
-        {sub && <div className="text-[12.5px] text-ink2 mt-1">{sub}</div>}
+        {sub && <div className="text-[13px] text-ink2 mt-1.5">{sub}</div>}
       </div>
       {acciones && <div className="flex flex-wrap items-center gap-2">{acciones}</div>}
     </div>

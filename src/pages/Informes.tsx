@@ -140,7 +140,7 @@ export default function Informes() {
               <div key={d.id} className="bg-panel border border-rule flex flex-col">
                 <div className="px-4 py-3 border-b border-rule flex items-start gap-3">
                   <Ic size={18} className="text-accent mt-0.5" />
-                  <div className="flex-1"><div className="font-medium text-[13px]">{d.nombre}</div><div className="text-[11px] text-ink3">{d.formato}</div></div>
+                  <div className="flex-1"><div className="font-bold text-[15px]">{d.nombre}</div><div className="text-[11px] text-ink3">{d.formato}</div></div>
                   {ult && <span className="text-[11px] tnum text-ink2">v{ult.version}</span>}
                 </div>
                 <div className="px-4 py-3 text-[12px] text-ink2 flex-1 min-h-[210px]">
@@ -192,7 +192,7 @@ export default function Informes() {
 
         <div className="grid grid-cols-1 2xl:grid-cols-2 gap-4 items-start">
           <div className="bg-panel border border-rule">
-            <div className="px-4 h-11 flex items-center border-b border-rule font-medium text-[13px]">Versiones de informes</div>
+            <div className="px-5 h-14 flex items-center border-b border-rule font-bold text-[15px]">Versiones de informes</div>
             {ej.informes.length === 0 ? <div className="px-4 py-4 text-[12px] text-ink3">Sin informes generados.</div> : (
               <div className="overflow-x-auto"><table className="tbl min-w-[720px]">
                 <thead><tr><th className="min-w-[200px]">Informe</th><th>Versión</th><th>UID</th><th>Fecha</th><th>Estado</th><th /></tr></thead>
@@ -201,8 +201,8 @@ export default function Informes() {
             )}
           </div>
           <div className="bg-panel border border-rule">
-            <div className="px-4 h-11 flex items-center justify-between border-b border-rule">
-              <span className="font-medium text-[13px]">Descargas por nota</span>
+            <div className="px-5 h-14 flex items-center justify-between border-b border-rule">
+              <span className="font-bold text-[15px]">Descargas por nota</span>
               <span className="text-[11px] text-ink3">{misNotas.length === ej.notas.length ? "Todas las notas según tu perfil" : "Solo tus notas asignadas"}</span>
             </div>
             <div className="max-h-[320px] overflow-auto">
