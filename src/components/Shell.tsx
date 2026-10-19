@@ -1,7 +1,7 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
-import { Bot, ChevronDown, LogOut, ScrollText, Settings2, Check, RefreshCcw, Bell, AlertCircle, Info } from "lucide-react";
+import { Bot, ChevronDown, LogOut, ScrollText, Settings2, Check, RefreshCcw, Bell, AlertCircle, Info, Menu, X } from "lucide-react";
 import { useApp } from "../engine/store";
 import { TRACKS, etapaIndice, pendientesCarga, porEstado, aprobacionesPendientes, misPendientes } from "../engine/derivados";
 import { USUARIOS, usuario, correo } from "../config/users";
@@ -105,7 +105,7 @@ function Campana() {
         {open && (
           <>
             <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
-            <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="absolute right-0 top-11 z-40 w-[380px] bg-panel rounded-xl shadow-[0_12px_32px_rgba(20,28,45,0.18)] overflow-hidden">
+            <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="absolute right-0 top-11 z-40 w-[380px] max-w-[calc(100vw-24px)] max-sm:fixed max-sm:left-3 max-sm:right-3 max-sm:top-[60px] max-sm:w-auto bg-panel rounded-xl shadow-[0_12px_32px_rgba(20,28,45,0.18)] overflow-hidden">
               <div className="px-4 pt-3 pb-2 font-bold text-[14px]">Notificaciones</div>
               {items.length === 0 && <div className="px-4 pb-4 text-[12.5px] text-ink3">No tienes pendientes en este ejercicio.</div>}
               <div className="max-h-[360px] overflow-auto">
@@ -137,7 +137,7 @@ function SelectorEjercicio() {
   return (
     <div className="relative min-w-0 shrink">
       <div className="flex items-center gap-2 min-w-0">
-        <button className="flex items-center gap-2 h-9 pl-2.5 pr-2 border border-[#9aa3b2] rounded-lg bg-panel hover:border-accent whitespace-nowrap shrink-0" onClick={() => setOpen(!open)} title="Sociedad y país">
+        <button className="hidden sm:flex items-center gap-2 h-9 pl-2.5 pr-2 border border-[#9aa3b2] rounded-lg bg-panel hover:border-accent whitespace-nowrap shrink-0" onClick={() => setOpen(!open)} title="Sociedad y país">
           <BanderaChile />
           <span className="text-[12.5px] font-medium text-ink2 hidden md:inline">CL</span>
           <ChevronDown size={15} className="text-ink2" />
@@ -154,7 +154,7 @@ function SelectorEjercicio() {
         {open && (
           <>
             <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
-            <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="absolute left-0 top-11 z-40 w-[400px] bg-panel rounded-xl shadow-[0_12px_32px_rgba(20,28,45,0.18)] overflow-hidden">
+            <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="absolute left-0 top-11 z-40 w-[400px] max-w-[calc(100vw-24px)] bg-panel rounded-xl shadow-[0_12px_32px_rgba(20,28,45,0.18)] overflow-hidden">
               <div className="px-4 pt-3 pb-1 sc">Ejercicios abiertos</div>
               {ejercicios.map((e) => (
                 <button key={e.id} className="w-full flex items-center justify-between px-4 h-10 hover:bg-accentSoft text-left" onClick={() => { sel(e.id); setOpen(false); }}>
@@ -195,7 +195,7 @@ function MenuUsuario() {
         {open && (
           <>
             <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
-            <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="absolute right-0 top-12 z-40 w-[340px] bg-panel rounded-xl shadow-[0_12px_32px_rgba(20,28,45,0.18)] overflow-hidden">
+            <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="absolute right-0 top-12 z-40 w-[340px] max-w-[calc(100vw-24px)] bg-panel rounded-xl shadow-[0_12px_32px_rgba(20,28,45,0.18)] overflow-hidden">
               <div className="px-3 py-2 border-b border-rule text-[11.5px] text-ink3">{correo(uid, dominio)}</div>
               <div className="px-3 pt-2 pb-1 sc text-[11px]">Cambiar de usuario (demo)</div>
               {USUARIOS.map((x) => (
@@ -219,32 +219,10 @@ function MenuUsuario() {
   );
 }
 
-export function Shell({ children }: { children: ReactNode }) {
-  const asistente = useApp((s) => s.asistente);
-  const setAsistente = useApp((s) => s.setAsistente);
-  const ej = useApp((s) => s.ej());
-  const loc = useLocation();
+function Lateral() {
   const perfiles = usePerfiles();
   return (
-    <div className="h-full flex flex-col">
-      <header className="h-[60px] shrink-0 flex items-center gap-3 xl:gap-4 px-5 bg-panel border-b border-rule min-w-0 shadow-[0_1px_0_rgba(20,28,45,0.04)]">
-        <span className="shrink-0"><DeloitteLogo h={22} /></span>
-        <span className="w-px h-6 bg-rule shrink-0" />
-        <span className="text-[15px] font-bold text-ink whitespace-nowrap hidden xl:inline">Cierre EEFF y Notas</span>
-        <SelectorEjercicio />
-        {ej.historico && <span className="text-[11.5px] text-ink3 whitespace-nowrap hidden 2xl:inline">Solo lectura · cerrado el {fechaCorta(ej.aprobadoEl ?? ej.fechaCierre)}</span>}
-        <div className="flex-1" />
-        <button className={`btn btn-sm shrink-0 ${asistente ? "btn-d" : ""}`} onClick={() => setAsistente(!asistente)} title="Agente del proceso">
-          <Bot size={14} /> <span className="hidden lg:inline">Agente del proceso</span>
-        </button>
-        <Campana />
-        <span className="w-px h-8 bg-rule shrink-0" />
-        <MenuUsuario />
-        <span className="w-px h-8 bg-rule shrink-0" />
-        <span className="shrink-0"><ClienteMarca h={34} /></span>
-      </header>
-      <div className="flex-1 flex min-h-0">
-        <aside className="w-[210px] xl:w-[250px] shrink-0 border-r border-rule flex flex-col bg-panel">
+    <>
           <Riel />
           <div className="mx-4 my-3 border-t border-rule" />
           <NavLink to="/auditoria" className={({ isActive }) => `mx-2 flex items-center gap-2.5 px-[14px] h-10 rounded-lg text-[12.5px] ${isActive ? "bg-accentSoft text-accent font-semibold" : "text-ink2 font-medium hover:text-ink"}`}>
@@ -259,7 +237,54 @@ export function Shell({ children }: { children: ReactNode }) {
           <button className="mx-1.5 mb-3 flex items-center gap-2.5 px-[14px] h-8 text-[11.5px] text-ink3 hover:text-ink" onClick={() => { useApp.getState().reiniciar(); location.reload(); }} title="Vuelve el ejercicio al escenario de demo inicial">
             <RefreshCcw size={12} /> Reiniciar demo
           </button>
+    </>
+  );
+}
+
+export function Shell({ children }: { children: ReactNode }) {
+  const [menu, setMenu] = useState(false);
+  const asistente = useApp((s) => s.asistente);
+  const setAsistente = useApp((s) => s.setAsistente);
+  const ej = useApp((s) => s.ej());
+  const loc = useLocation();
+  useEffect(() => setMenu(false), [loc.pathname, loc.search]);
+  return (
+    <div className="h-full flex flex-col">
+      <header className="h-[56px] sm:h-[60px] shrink-0 flex items-center gap-2 sm:gap-3 xl:gap-4 px-3 sm:px-5 bg-panel border-b border-rule min-w-0 shadow-[0_1px_0_rgba(20,28,45,0.04)]">
+        <button className="lg:hidden w-9 h-9 -ml-1 rounded-full flex items-center justify-center text-ink hover:bg-head shrink-0" onClick={() => setMenu(true)} aria-label="Abrir menú"><Menu size={21} /></button>
+        <span className="shrink-0 hidden sm:block"><DeloitteLogo h={22} /></span>
+        <span className="w-px h-6 bg-rule shrink-0 hidden sm:block" />
+        <span className="text-[15px] font-bold text-ink whitespace-nowrap hidden xl:inline">Cierre EEFF y Notas</span>
+        <SelectorEjercicio />
+        {ej.historico && <span className="text-[11.5px] text-ink3 whitespace-nowrap hidden 2xl:inline">Solo lectura · cerrado el {fechaCorta(ej.aprobadoEl ?? ej.fechaCierre)}</span>}
+        <div className="flex-1" />
+        <button className={`btn btn-sm shrink-0 max-sm:!px-2 ${asistente ? "btn-d" : ""}`} onClick={() => setAsistente(!asistente)} title="Agente del proceso">
+          <Bot size={14} /> <span className="hidden lg:inline">Agente del proceso</span>
+        </button>
+        <Campana />
+        <span className="w-px h-8 bg-rule shrink-0 hidden sm:block" />
+        <MenuUsuario />
+        <span className="w-px h-8 bg-rule shrink-0 hidden sm:block" />
+        <span className="shrink-0 hidden sm:block"><ClienteMarca h={34} /></span>
+      </header>
+      <div className="flex-1 flex min-h-0">
+        <aside className="hidden lg:flex w-[210px] xl:w-[250px] shrink-0 border-r border-rule flex-col bg-panel">
+          <Lateral />
         </aside>
+        <AnimatePresence>
+          {menu && (
+            <motion.div className="lg:hidden fixed inset-0 z-50" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <div className="absolute inset-0 bg-[rgba(30,36,48,0.45)]" onClick={() => setMenu(false)} />
+              <motion.aside initial={{ x: -280 }} animate={{ x: 0 }} exit={{ x: -280 }} transition={{ duration: 0.22, ease: [0.2, 0.8, 0.2, 1] }} className="absolute left-0 top-0 bottom-0 w-[280px] max-w-[85vw] bg-panel flex flex-col shadow-[12px_0_40px_rgba(20,28,45,0.2)]">
+                <div className="h-[56px] flex items-center justify-between px-4 border-b border-rule shrink-0">
+                  <span className="text-[15px] font-bold">Cierre EEFF y Notas</span>
+                  <button className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-head" onClick={() => setMenu(false)} aria-label="Cerrar menú"><X size={18} /></button>
+                </div>
+                <div className="flex-1 flex flex-col overflow-auto"><Lateral /></div>
+              </motion.aside>
+            </motion.div>
+          )}
+        </AnimatePresence>
         <main key={loc.pathname.split("/")[1]} className="flex-1 min-w-0 overflow-auto">
           {children}
         </main>

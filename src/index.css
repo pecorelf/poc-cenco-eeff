@@ -108,3 +108,14 @@ mark.cambio { background: color-mix(in srgb, var(--accent-3) 30%, white); color:
 
 /* Contenedores y chips con borde: esquinas suaves como la plataforma del cliente */
 .border.border-rule:not(.bg-panel) { border-radius: 8px; }
+
+/* Celular: márgenes y tipografía compactos */
+@media (max-width: 640px) {
+  main .p-6 { padding: 14px; }
+  main .px-6 { padding-left: 14px; padding-right: 14px; }
+  main .mx-6 { margin-left: 14px; margin-right: 14px; }
+  main .pt-6 { padding-top: 16px; }
+  main h1 { font-size: 21px !important; }
+  .btn { height: 34px; padding: 0 12px; }
+  table.tbl th, table.tbl td { padding-left: 10px; padding-right: 10px; }
+}

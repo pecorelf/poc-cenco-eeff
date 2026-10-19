@@ -159,7 +159,7 @@ function CargaManual({ def, f, puede }: { def: FuenteDef; f: FuenteRun; puede: b
           <div className="text-[12.5px]">Arrastra el archivo aquí o <button className="text-accent font-medium underline-offset-2 hover:underline" onClick={() => input.current?.click()}>selecciónalo</button></div>
           <div className="text-[11px] text-ink3 mt-1">{def.formato} · asociado a {ej.periodo} · genera la versión v{f.version + 1}</div>
           <input ref={input} type="file" className="hidden" onChange={(e) => { const fl = e.target.files?.[0]; if (fl) procesar(fl.name); }} />
-          <div className="flex justify-center gap-2 mt-4">
+          <div className="flex flex-wrap justify-center gap-2 mt-4">
             <button className="btn btn-sm btn-p" onClick={() => procesar(ejemplo, "ok")}>Usar archivo de ejemplo corregido</button>
             <button className="btn btn-sm" onClick={() => procesar(ejemplo.replace(`.${ext}`, `_borrador.${ext}`), "errores")}>Probar un archivo con errores</button>
           </div>

@@ -47,12 +47,12 @@ export function Asistente() {
   return (
     <motion.aside
       initial={{ width: 0, opacity: 0 }}
-      animate={{ width: 400, opacity: 1 }}
+      animate={{ width: typeof window !== "undefined" && window.innerWidth < 1024 ? window.innerWidth : 400, opacity: 1 }}
       exit={{ width: 0, opacity: 0 }}
       transition={{ duration: 0.22, ease: [0.2, 0.8, 0.2, 1] }}
-      className="shrink-0 border-l border-rule bg-panel flex flex-col overflow-hidden"
+      className="shrink-0 border-l border-rule bg-panel flex flex-col overflow-hidden max-lg:fixed max-lg:inset-y-0 max-lg:right-0 max-lg:z-50"
     >
-      <div className="h-11 flex items-center justify-between px-4 border-b border-rule shrink-0 w-[400px]">
+      <div className="h-11 flex items-center justify-between px-4 border-b border-rule shrink-0 w-screen lg:w-[400px]">
         <div className="flex items-center gap-2 font-medium text-[13px]">
           <Bot size={15} className="text-accent" /> Agente Asistente del proceso
         </div>
@@ -60,7 +60,7 @@ export function Asistente() {
           <X size={14} />
         </button>
       </div>
-      <div className="flex-1 overflow-auto px-4 py-4 w-[400px] space-y-4">
+      <div className="flex-1 overflow-auto px-4 py-4 w-screen lg:w-[400px] space-y-4">
         {msgs.length === 0 && (
           <div>
             <p className="text-[12.5px] text-ink2 leading-relaxed mb-4">Responde con el calendario y el estado real del ejercicio seleccionado: hitos, responsables, validaciones y próximos pasos.</p>
@@ -98,7 +98,7 @@ export function Asistente() {
         <div ref={fin} />
       </div>
       <form
-        className="border-t border-rule p-3 flex gap-2 w-[400px] shrink-0"
+        className="border-t border-rule p-3 flex gap-2 w-screen lg:w-[400px] shrink-0"
         onSubmit={(e) => {
           e.preventDefault();
           enviar(q);

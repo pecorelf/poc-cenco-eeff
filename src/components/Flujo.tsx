@@ -20,7 +20,8 @@ export function FlujoNotas({ ej, pack, alto = 170 }: { ej: Ejercicio; pack: Indu
   const cols = ETAPAS.map((_, i) => ej.notas.filter((n) => etapaNota(ej, n) === i));
   return (
     <LayoutGroup>
-      <div className="grid grid-cols-6 border-t border-rule">
+      <div className="overflow-x-auto">
+      <div className="grid grid-cols-6 border-t border-rule min-w-[840px]">
         {ETAPAS.map((et, i) => {
           const notas = cols[i];
           const conMovimiento = i < 5 && notas.length > 0;
@@ -64,6 +65,7 @@ export function FlujoNotas({ ej, pack, alto = 170 }: { ej: Ejercicio; pack: Indu
             </div>
           );
         })}
+      </div>
       </div>
     </LayoutGroup>
   );

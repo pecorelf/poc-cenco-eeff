@@ -62,34 +62,34 @@ export default function Login() {
   };
 
   return (
-    <div className="h-full flex">
-      <div className="flex-[1.35] relative overflow-hidden flex flex-col justify-between p-10" style={{ background: "var(--accent-2)" }}>
+    <div className="min-h-full lg:h-full flex flex-col lg:flex-row">
+      <div className="lg:flex-[1.35] relative overflow-hidden flex flex-col justify-between gap-4 px-5 py-6 sm:p-10" style={{ background: "var(--accent-2)" }}>
         <div className="text-white/60 text-[12px]">{cliente.sociedades.map((s) => s.nombre).join(" · ")}</div>
         <div>
-          <motion.h1 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="text-white text-[34px] font-semibold leading-[1.15] tracking-[-0.015em] max-w-[560px]">
+          <motion.h1 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="text-white text-[24px] sm:text-[34px] font-semibold leading-[1.15] tracking-[-0.015em] max-w-[560px]">
             Cierre de estados financieros y notas
           </motion.h1>
-          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="text-white/65 text-[14px] mt-3 max-w-[520px] leading-relaxed">
+          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="text-white/65 text-[13px] sm:text-[14px] mt-3 max-w-[520px] leading-relaxed">
             {pack.notas.length} notas por ejercicio, desde la carga de fuentes hasta el envío a la CMF, con control, gobierno y trazabilidad en cada paso.
           </motion.p>
-          <div className="mt-12 max-w-[760px]">
+          <div className="mt-12 max-w-[760px] hidden md:block">
             <Recorrido total={pack.notas.length} />
           </div>
         </div>
-        <div className="text-white/40 text-[11px]">Datos sintéticos de demostración</div>
+        <div className="text-white/40 text-[11px] hidden lg:block">Datos sintéticos de demostración</div>
       </div>
 
-      <div className="flex-1 bg-panel flex flex-col px-12 py-10 min-w-[420px]">
+      <div className="flex-1 bg-panel flex flex-col px-5 py-6 sm:px-12 sm:py-10 lg:min-w-[420px]">
         <div className="flex items-center justify-between">
           <DeloitteLogo h={26} />
           <ClienteMarca h={26} />
         </div>
-        <div className="flex-1 flex flex-col justify-center max-w-[400px] w-full mx-auto">
+        <div className="flex-1 flex flex-col justify-center max-w-[440px] w-full mx-auto mt-6 lg:mt-0">
           <div className="flex items-center gap-2 text-[12px] text-ink2 mb-1">
             <ShieldCheck size={14} className="text-accent" /> Inicio de sesión corporativo (SSO)
           </div>
           <h2 className="text-[20px] font-semibold mb-5">Elige tu cuenta</h2>
-          <div className="border border-rule divide-y divide-rule2 max-h-[52vh] overflow-auto">
+          <div className="border border-rule divide-y divide-rule2 lg:max-h-[52vh] overflow-auto">
             {USUARIOS.map((u, i) => (
               <motion.button
                 key={u.id}
@@ -105,7 +105,7 @@ export default function Login() {
                   <span className="block text-[13px] font-medium truncate">{u.nombre}</span>
                   <span className="block text-[11px] text-ink3 truncate">{correo(u.id, cliente.dominio)}</span>
                 </span>
-                <span className="text-[10.5px] text-ink2 text-right leading-tight max-w-[130px]">{u.perfiles.map((p) => PERFIL_NOMBRE[p]).join(" · ")}</span>
+                <span className="text-[10.5px] text-ink2 text-right leading-tight max-w-[130px] hidden sm:block">{u.perfiles.map((p) => PERFIL_NOMBRE[p]).join(" · ")}</span>
                 {verificando === u.id && <Loader2 size={15} className="animate-spin text-accent" />}
               </motion.button>
             ))}
@@ -129,7 +129,7 @@ export default function Login() {
             )}
           </AnimatePresence>
         </div>
-        <div className="text-[11px] text-ink3">Cada acceso queda registrado en el log de auditoría.</div>
+        <div className="text-[11px] text-ink3 mt-6 lg:mt-0">Cada acceso queda registrado en el log de auditoría.</div>
       </div>
     </div>
   );

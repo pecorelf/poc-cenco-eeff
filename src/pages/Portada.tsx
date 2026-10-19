@@ -447,7 +447,7 @@ export default function Portada() {
       </div>
 
       <motion.div {...d(6)} className="mx-6 mt-5 bg-panel border border-rule">
-        <div className="flex items-center justify-between px-6 pt-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-6 pt-4">
           <div>
             <div className="font-bold text-[15px]">Recorrido de las {total} notas</div>
             <div className="text-[11.5px] text-ink3">Cada cuadro es una nota en la etapa en que está. Se mueve al cambiar de estado.</div>

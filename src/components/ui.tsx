@@ -140,7 +140,7 @@ export function Modal({ open, onClose, title, children, width = 620, footer }: {
   return (
     <AnimatePresence>
       {open && (
-        <motion.div className="fixed inset-0 z-50 flex items-start justify-center pt-[7vh] px-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.16 }}>
+        <motion.div className="fixed inset-0 z-50 flex items-start justify-center pt-[4vh] sm:pt-[7vh] px-3 sm:px-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.16 }}>
           <div className="absolute inset-0 bg-[rgba(30,36,48,0.45)]" onClick={onClose} />
           <motion.div
             className="relative bg-panel rounded-2xl flex flex-col max-h-[86vh] shadow-[0_18px_48px_rgba(20,28,45,0.22)] max-w-full"
@@ -150,14 +150,14 @@ export function Modal({ open, onClose, title, children, width = 620, footer }: {
             exit={{ y: 8, opacity: 0 }}
             transition={{ duration: 0.2, ease: [0.2, 0.8, 0.2, 1] }}
           >
-            <div className="flex items-start justify-between gap-4 px-7 pt-6 pb-3 shrink-0">
+            <div className="flex items-start justify-between gap-4 px-5 sm:px-7 pt-6 pb-3 shrink-0">
               <div className="font-bold text-[19px] leading-tight text-ink">{title}</div>
               <button className="text-ink2 hover:text-ink -mr-1 mt-0.5" onClick={onClose} aria-label="Cerrar">
                 <X size={22} />
               </button>
             </div>
-            <div className="overflow-auto px-7 pb-5 pt-1">{children}</div>
-            {footer && <div className="px-7 pb-6 pt-1 flex flex-wrap justify-end gap-3 shrink-0">{footer}</div>}
+            <div className="overflow-auto px-5 sm:px-7 pb-5 pt-1">{children}</div>
+            {footer && <div className="px-5 sm:px-7 pb-6 pt-1 flex flex-wrap justify-end gap-3 shrink-0">{footer}</div>}
           </motion.div>
         </motion.div>
       )}
@@ -180,11 +180,11 @@ export function Drawer({ open, onClose, title, children, width = 520, footer }: 
             exit={{ x: 40, opacity: 0 }}
             transition={{ duration: 0.24, ease: [0.2, 0.8, 0.2, 1] }}
           >
-            <button onClick={onClose} aria-label="Cerrar" className="absolute -left-5 top-5 w-10 h-10 rounded-full bg-panel shadow-[0_2px_10px_rgba(20,28,45,0.18)] flex items-center justify-center text-ink hover:text-accent">
+            <button onClick={onClose} aria-label="Cerrar" className="absolute left-3 sm:-left-5 top-5 z-[1] w-10 h-10 rounded-full bg-panel shadow-[0_2px_10px_rgba(20,28,45,0.18)] flex items-center justify-center text-ink hover:text-accent">
               <ArrowRight size={18} />
             </button>
-            <div className="px-7 pt-6 pb-4 border-b border-rule shrink-0">
-              <div className="font-bold text-[19px] leading-tight text-ink pr-4">{title}</div>
+            <div className="pl-16 sm:pl-7 pr-7 pt-6 pb-4 border-b border-rule shrink-0">
+              <div className="font-bold text-[17px] sm:text-[19px] leading-tight text-ink pr-4">{title}</div>
             </div>
             <div className="flex-1 overflow-auto">{children}</div>
             {footer && <div className="px-7 py-4 border-t border-rule flex justify-end gap-3 shrink-0">{footer}</div>}
