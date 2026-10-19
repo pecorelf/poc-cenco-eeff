@@ -10,9 +10,9 @@
   --ink-3: #8a929b;
   --rule: #d9ddd5;
   --rule-2: #e9ebe6;
-  --accent: #0b4ea2;
-  --accent-2: #15212e;
-  --accent-3: #e8a317;
+  --accent: #007cc1;
+  --accent-2: #0b2f4e;
+  --accent-3: #f9a41e;
   --accent-soft: color-mix(in srgb, var(--accent) 8%, white);
   --ok: #1f7a4d;
   --ko: #b42318;

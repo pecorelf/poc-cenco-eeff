@@ -4,7 +4,8 @@ import type { ClienteConfig } from "../../engine/types";
 export const CLIENTES: Record<string, ClienteConfig> = {
   cencosud: {
     id: "cencosud", nombre: "Cencosud", industria: "retail", dominio: "cencosud.cl", auditora: "Firma auditora externa",
-    colores: { primario: "#0B4EA2", secundario: "#15212E", acento: "#E8A317" },
+    colores: { primario: "#007CC1", secundario: "#0B2F4E", acento: "#F9A41E" },
+    logo: "/clientes/cencosud.png",
     sociedades: [
       { id: "cencosud-sa", nombre: "Cencosud S.A.", rut: "96.512.340-8", escala: 1 },
       { id: "cencosud-shopping", nombre: "Cencosud Shopping S.A.", rut: "76.433.310-1", escala: 0.061 }

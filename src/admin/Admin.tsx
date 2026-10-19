@@ -140,7 +140,7 @@ export default function Admin() {
               <div className="w-[180px] h-16 border border-dashed border-ink3 flex items-center justify-center bg-paper"><ClienteMarca h={28} /></div>
               <div className="flex flex-col gap-2">
                 <button className="btn btn-sm" onClick={() => input.current?.click()}><Upload size={13} /> Subir PNG o SVG</button>
-                {cliente.logo && <button className="btn btn-sm" onClick={() => setLogo(null)}><Trash2 size={13} /> Quitar</button>}
+                {config.logos[config.cliente] && <button className="btn btn-sm" onClick={() => setLogo(null)}><Trash2 size={13} /> Volver al logo base</button>}
               </div>
               <input ref={input} type="file" accept="image/png,image/svg+xml,image/jpeg" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) subir(f); }} />
             </div>

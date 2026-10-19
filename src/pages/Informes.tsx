@@ -6,6 +6,7 @@ import { useApp } from "../engine/store";
 import { Encabezado } from "../components/Shell";
 import { Label, Modal, usePerfiles, tiene, esperar } from "../components/ui";
 import { lineasCaratula } from "../components/Informe";
+import { estadosFinancieros } from "../engine/estados";
 import { exportarNota } from "../components/NotaPartes";
 import { miles, fechaHora, fechaLarga, fechaCorta } from "../engine/util";
 import { usuario } from "../config/users";
@@ -99,8 +100,9 @@ export default function Informes() {
     const base = `${inf.id.toUpperCase()}_${soc.rut.replace(/\./g, "")}_${ej.anio}T${ej.trimestre}_v${inf.version}`;
     if (inf.id === "cmf") {
       const cuerpo = `<h1>${esc(soc.nombre)}</h1><p>Estados financieros consolidados intermedios al ${fechaLarga(ej.fechaCierre)} · cifras en M$</p>` +
-        `<h2>Estado de situación financiera (extracto)</h2><table>${lineasCaratula(ej, pack, "ESF").map((c) => `<tr><td>${esc(c.linea)} (Nota ${c.n})</td><td class="n">${miles(c.nota)}</td><td class="n">${miles(c.comp)}</td></tr>`).join("")}</table>` +
-        `<h2>Estado de resultados (extracto)</h2><table>${lineasCaratula(ej, pack, "ER").map((c) => `<tr><td>${esc(c.linea)} (Nota ${c.n})</td><td class="n">${miles(c.nota)}</td><td class="n">${miles(c.comp)}</td></tr>`).join("")}</table>` +
+        estadosFinancieros(ej, pack, cliente).map((e) => e.columnas
+          ? `<h2>${esc(e.titulo)}</h2><p>${esc(e.subtitulo)}</p><table><tr><th></th>${e.columnas.map((c) => `<th>${esc(c)}</th>`).join("")}</tr>${e.lineas.map((l) => `<tr class="${l.kind === "total" || l.kind === "subtotal" ? "t" : ""}"><td>${esc(l.label)}</td>${(l.cols ?? e.columnas!.map(() => null)).map((v) => `<td class="n">${v === null ? "" : miles(v)}</td>`).join("")}</tr>`).join("")}</table>`
+          : `<h2>${esc(e.titulo)}</h2><p>${esc(e.subtitulo)}</p><table><tr><th></th><th>Nota</th><th>${e.colA} M$</th><th>${e.colB} M$</th></tr>${e.lineas.map((l) => l.kind === "seccion" ? `<tr><td colspan="4"><b>${esc(l.label)}</b></td></tr>` : `<tr class="${l.kind === "line" ? "" : "t"}"><td>${esc(l.label)}</td><td>${l.nota ?? ""}</td><td class="n">${miles(l.actual)}</td><td class="n">${miles(l.comp)}</td></tr>`).join("")}</table>`).join("") +
         ej.notas.map((n) => { const d = pack.notas.find((x) => x.n === n.n)!; return `<h2>Nota ${n.n} · ${esc(d.titulo)}</h2>${(n.texto ?? "").split("\n\n").filter(Boolean).map((p) => `<p>${esc(p)}</p>`).join("")}${n.cuadros.map((c) => `<h3>${esc(c.titulo)}</h3><table>${c.lineas.map((l) => `<tr class="${l.kind === "total" ? "t" : ""}"><td>${esc(l.label)}</td><td class="n">${miles(l.actual)}</td><td class="n">${miles(l.comp)}</td></tr>`).join("")}</table>`).join("")}`; }).join("");
       descargarDoc(`${base}.doc`, "Estados financieros", cuerpo, `UID ${inf.uid} · aprobado por el Directorio ${fechaCorta(ej.aprobadoEl ?? new Date())}`);
     } else if (inf.id === "xbrl") {
@@ -130,7 +132,7 @@ export default function Informes() {
           </>
         } />
       <div className="p-6 space-y-4">
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {ultimos.map(({ d, runs }) => {
             const Ic = ICONO[d.id] ?? FileText;
             const ult = runs[runs.length - 1];
@@ -188,14 +190,14 @@ export default function Informes() {
           })}
         </div>
 
-        <div className="grid grid-cols-2 gap-4 items-start">
+        <div className="grid grid-cols-1 2xl:grid-cols-2 gap-4 items-start">
           <div className="bg-panel border border-rule">
             <div className="px-4 h-11 flex items-center border-b border-rule font-medium text-[13px]">Versiones de informes</div>
             {ej.informes.length === 0 ? <div className="px-4 py-4 text-[12px] text-ink3">Sin informes generados.</div> : (
-              <table className="tbl">
-                <thead><tr><th>Informe</th><th>Versión</th><th>UID</th><th>Fecha</th><th>Estado</th><th /></tr></thead>
-                <tbody>{[...ej.informes].reverse().map((i) => <tr key={i.uid}><td>{i.nombre}</td><td className="tnum">v{i.version}</td><td className="font-mono text-[11px] whitespace-nowrap">{i.uid}</td><td className="tnum text-ink2 whitespace-nowrap">{fechaHora(i.fecha)}</td><td className={i.publicado ? "text-ok" : "text-ink2"}>{i.publicado ? "Publicado" : "Generado"}</td><td><button className="btn btn-sm btn-g" onClick={() => bajar(i)}><Download size={12} /></button></td></tr>)}</tbody>
-              </table>
+              <div className="overflow-x-auto"><table className="tbl min-w-[720px]">
+                <thead><tr><th className="min-w-[200px]">Informe</th><th>Versión</th><th>UID</th><th>Fecha</th><th>Estado</th><th /></tr></thead>
+                <tbody>{[...ej.informes].reverse().map((i) => <tr key={i.uid}><td>{i.nombre}</td><td className="tnum">v{i.version}</td><td className="font-mono text-[11px] whitespace-nowrap">{i.uid}</td><td className="tnum text-ink2 whitespace-nowrap">{fechaHora(i.fecha)}</td><td className={`whitespace-nowrap ${i.publicado ? "text-ok" : "text-ink2"}`}>{i.publicado ? "Publicado" : "Generado"}</td><td><button className="btn btn-sm btn-g" onClick={() => bajar(i)}><Download size={12} /></button></td></tr>)}</tbody>
+              </table></div>
             )}
           </div>
           <div className="bg-panel border border-rule">

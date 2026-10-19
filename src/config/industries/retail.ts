@@ -98,6 +98,48 @@ const notas: NotaDef[] = [
       "Entre el {{fecha_cierre}} y la fecha de emisión de los presentes estados financieros consolidados intermedios no han ocurrido hechos de carácter financiero o de otra índole que afecten en forma significativa los saldos o la interpretación de los mismos." }
 ];
 
+// Aperturas adicionales por nota: cada una cuadra contra el total del cuadro principal.
+const cnc = () => cuadro("cnc", "Corriente y no corriente", [L("c", "Corriente", 0.62), L("nc", "No corriente", 0.38)]);
+const porPais = (comparativo: CuadroDef["comparativo"] = "cierre_anterior") =>
+  cuadro("paisx", "Por país", [L("ch", "Chile", 0.46), L("ar", "Argentina", 0.12), L("br", "Brasil", 0.2), L("pe", "Perú", 0.12), L("co", "Colombia", 0.1)], comparativo);
+const porMoneda = () => cuadro("monx", "Por moneda", [L("clp", "Peso chileno", 0.56), L("usd", "Dólar estadounidense", 0.17), L("ars", "Peso argentino", 0.08), L("brl", "Real brasileño", 0.11), L("otr", "Otras monedas", 0.08)]);
+const porVenc = () => cuadro("venx", "Por vencimiento", [L("v1", "Hasta 90 días", 0.21), L("v2", "91 días a 1 año", 0.19), L("v3", "1 a 3 años", 0.24), L("v4", "3 a 5 años", 0.17), L("v5", "Más de 5 años", 0.19)]);
+
+const EXTRA: Record<number, CuadroDef[]> = {
+  3: [porMoneda()],
+  5: [porPais()],
+  6: [cnc(), porMoneda()],
+  7: [cnc()],
+  8: [porMoneda(), cnc(), porPais()],
+  9: [porPais()],
+  10: [porPais(), cuadro("seg", "Por segmento", [L("sm", "Supermercados", 0.64), L("mi", "Mejoramiento del hogar", 0.21), L("td", "Tiendas por departamento", 0.15)])],
+  11: [porPais()],
+  12: [cuadro("mov", "Movimiento de la inversión", [L("si", "Saldo inicial", 0.94), L("par", "Participación en resultados", 0.05), L("div", "Dividendos recibidos", -0.02), L("conv", "Diferencias de conversión", 0.03)])],
+  13: [cuadro("clase", "Por clase de activo", [L("sw", "Software y desarrollos", 0.38), L("mar", "Marcas", 0.44), L("der", "Derechos de uso de marcas y licencias", 0.12), L("ot", "Otros", 0.06)]), porPais()],
+  15: [porPais()],
+  16: [porPais(), cuadro("orig", "Por origen del efecto", [L("res", "Reconocido en resultados", 0.83), L("pat", "Reconocido en patrimonio", 0.17)])],
+  17: [porVenc(), cnc(), cuadro("tasa", "Por tipo de tasa", [L("fija", "Tasa fija", 0.81), L("var", "Tasa variable", 0.19)])],
+  18: [porMoneda(), cnc(), porPais()],
+  19: [cnc(), porPais()],
+  20: [cnc(), porPais()],
+  21: [cnc()],
+  22: [cuadro("tipo", "Por tipo de activo", [L("cc", "Centros comerciales", 0.71), L("ter", "Terrenos", 0.14), L("ofi", "Oficinas", 0.09), L("ot", "Otros", 0.06)]), cuadro("valor", "Jerarquía de valor razonable", [L("n2", "Nivel 2", 0.18), L("n3", "Nivel 3", 0.82)])],
+  23: [porPais(), cuadro("pas", "Pasivos por arrendamiento por vencimiento", [L("p1", "Hasta 1 año", 0.14), L("p2", "1 a 5 años", 0.41), L("p3", "Más de 5 años", 0.45)])],
+  24: [cuadro("atr", "Atribución del patrimonio", [L("ctr", "Propietarios de la controladora", 0.97), L("nc", "Participaciones no controladoras", 0.03)])],
+  25: [porPais("mismo_periodo"), cuadro("canal", "Por canal de venta", [L("tie", "Tiendas físicas", 0.86), L("ecom", "Comercio electrónico", 0.14)], "mismo_periodo"), cuadro("rec", "Por oportunidad de reconocimiento", [L("pt", "En un punto del tiempo", 0.96), L("tt", "A lo largo del tiempo", 0.04)], "mismo_periodo")],
+  26: [porPais("mismo_periodo")],
+  30: [porPais("mismo_periodo"), cuadro("fun", "Por función", [L("cv", "Costo de ventas", 0.79), L("dis", "Costos de distribución", 0.03), L("adm", "Gastos de administración", 0.18)], "mismo_periodo")],
+  31: [porPais("mismo_periodo")],
+  32: [cuadro("if", "Ingresos financieros", [L("dep", "Intereses por depósitos", 0.64), L("inv", "Intereses por inversiones", 0.36)], "mismo_periodo"), porPais("mismo_periodo")],
+  33: [cuadro("segx", "Por segmento", [L("sm", "Supermercados", 0.72), L("mi", "Mejoramiento del hogar", 0.13), L("td", "Tiendas por departamento", 0.1), L("cc", "Centros comerciales", 0.03), L("sf", "Servicios financieros", 0.02)], "mismo_periodo")],
+  34: [porPais()],
+  35: [cuadro("tipo", "Por tipo de partida", [L("act", "Activos monetarios", 0.42), L("pas", "Pasivos monetarios", 0.58)])],
+  36: [porPais("mismo_periodo")]
+};
+notas.forEach((n) => {
+  if (EXTRA[n.n]) n.cuadros = [...n.cuadros, ...EXTRA[n.n]];
+});
+
 export const retail: IndustriaPack = {
   id: "retail",
   nombre: "Retail",

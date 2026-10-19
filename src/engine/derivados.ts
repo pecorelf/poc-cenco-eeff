@@ -3,6 +3,7 @@ import { ESTADOS_NOTA } from "./types";
 import { hoy, habilesEntre, fechaCorta } from "./util";
 import { usuario } from "../config/users";
 import { totalNota } from "./generator";
+import { estadosFinancieros, cuadraturaNotas } from "./estados";
 
 export const TRACKS = [
   { id: "portada", n: "01", nombre: "Portada", ruta: "/inicio", perfiles: ["admin", "proceso", "carga", "nota", "aprobador", "auditor", "directorio", "consulta"] as Perfil[] },
@@ -129,6 +130,13 @@ export function contextoAsistente(ej: Ejercicio, pack: IndustriaPack, cliente: C
     }),
     cuentasSinHomologar: ej.homologacionPendiente.filter((h) => !h.asignada),
     comentariosAbiertos: ej.comentarios.filter((c) => c.estado === "abierto").map((c) => ({ nota: c.nota, instancia: c.instancia, texto: c.texto })),
+    estadosFinancieros: (() => {
+      const ef = estadosFinancieros(ej, pack, cliente);
+      return {
+        resumen: ef.map((e) => ({ estado: e.titulo, columnas: [e.colA, e.colB], lineas: e.lineas.filter((l) => l.kind === "subtotal" || l.kind === "total").map((l) => ({ linea: l.label, actual: l.actual, comparativo: l.comp })), controles: e.controles.map((c) => `${c.nombre}: ${c.dif === 0 ? "OK" : `dif ${c.dif}`}`) })),
+        notasQueNoCuadranConEstados: cuadraturaNotas(ej, pack, ef).filter((c) => c.dif !== 0).map((c) => ({ nota: c.nota, dif: c.dif }))
+      };
+    })(),
     auditoria: ej.auditoria.estado,
     directorio: ej.directorio.estado,
     perfiles: ["Administrador del sistema", "Responsable del proceso", "Responsable de carga", "Responsable de nota", "Aprobador de notas", "Auditor externo", "Gerencia – Directorio", "Consulta"],

@@ -26,8 +26,8 @@ export function FlujoNotas({ ej, pack, alto = 170 }: { ej: Ejercicio; pack: Indu
           const conMovimiento = i < 5 && notas.length > 0;
           return (
             <div key={et} className={`relative px-4 pt-3 pb-4 ${i ? "border-l border-rule" : ""}`} style={{ minHeight: alto }}>
-              <div className="flex items-baseline justify-between mb-3">
-                <div className="text-[12px] text-ink2">
+              <div className="flex items-baseline justify-between gap-2 mb-3">
+                <div className="text-[12px] text-ink2 min-w-0 leading-tight">
                   <span className="tnum text-ink3 mr-1.5">{String(i + 1).padStart(2, "0")}</span>
                   {et}
                 </div>

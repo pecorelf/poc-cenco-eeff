@@ -92,6 +92,14 @@ export function calcularCuadros(def: NotaDef, ej: Ejercicio, escalaSoc: number, 
       if (!l) return;
       l.cuentas.push({ codigo: h.cuenta, nombre: h.nombre, pesos: h.monto * 1000, pesosComp: 0, nueva: true });
       l.actual += h.monto;
+      // Las aperturas secundarias reciben la cuenta en la línea que corresponde por país, moneda o plazo.
+      cuadros.slice(1).forEach((c2) => {
+        const ls = c2.lineas.filter((x) => x.kind !== "total");
+        const pista = (re: RegExp) => ls.find((x) => re.test(x.label));
+        const pais = h.nombre.match(/Chile|Argentina|Brasil|Perú|Colombia/)?.[0];
+        const destino = (pais && pista(new RegExp(pais))) || (pais && pais !== "Chile" && pista(/Dólar/)) || pista(/^Corriente$|Hasta 90/) || ls[0];
+        if (destino) destino.actual += h.monto;
+      });
     });
   ajustes
     .filter((a) => a.estado === "confirmado")

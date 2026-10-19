@@ -12,71 +12,64 @@ import { historicos } from "../engine/generator";
 import { periodoEnCurso, fechaCorta, hoy, habilesEntre, fechaLarga, finTrimestre } from "../engine/util";
 import { usuario, USUARIOS } from "../config/users";
 
-function EstadosEjercicio() {
+/** Estado del ejercicio como tag, con el detalle del recorrido al pasar el cursor. */
+function EstadoEEFF() {
   const ej = useApp((s) => s.ej());
   const idx = ESTADOS_EJERCICIO.indexOf(ej.estado);
+  const sig = ESTADOS_EJERCICIO[idx + 1];
   return (
-    <div className="flex items-center gap-0 overflow-x-auto">
-      {ESTADOS_EJERCICIO.map((e, i) => (
-        <div key={e} className="flex items-center shrink-0">
-          <div className="flex items-center gap-1.5 text-[11.5px]" style={{ color: i === idx ? "var(--accent)" : i < idx ? "var(--ink-2)" : "var(--ink-3)", fontWeight: i === idx ? 600 : 400 }}>
-            <span className="w-[7px] h-[7px]" style={{ background: i <= idx ? "var(--accent)" : "transparent", border: "1px solid", borderColor: i <= idx ? "var(--accent)" : "var(--ink-3)" }} />
+    <span className="group relative inline-flex items-center gap-2 align-middle">
+      <span className="inline-flex items-center gap-1.5 h-[24px] px-2.5 text-[12px] font-medium text-white whitespace-nowrap" style={{ background: ej.estado === "Cerrado" ? "var(--ink-2)" : "var(--accent)" }}>
+        <span className="w-1.5 h-1.5 rounded-full bg-white" />
+        {ej.estado}
+      </span>
+      <span className="text-[11.5px] text-ink3 whitespace-nowrap tnum">Etapa {idx + 1} de {ESTADOS_EJERCICIO.length}{sig ? ` · sigue ${sig}` : ""}</span>
+      <span className="pointer-events-none absolute left-0 top-8 z-30 hidden group-hover:block bg-panel border border-rule px-3 py-2 w-[260px]">
+        {ESTADOS_EJERCICIO.map((e, i) => (
+          <span key={e} className="flex items-center gap-2 text-[11.5px] py-[2px]" style={{ color: i === idx ? "var(--accent)" : i < idx ? "var(--ink-2)" : "var(--ink-3)", fontWeight: i === idx ? 600 : 400 }}>
+            <span className="w-[7px] h-[7px] border" style={{ background: i <= idx ? "var(--accent)" : "transparent", borderColor: i <= idx ? "var(--accent)" : "var(--ink-3)" }} />
             {e}
-          </div>
-          {i < ESTADOS_EJERCICIO.length - 1 && <span className="w-5 h-px mx-1.5" style={{ background: i < idx ? "var(--accent)" : "var(--rule)" }} />}
-        </div>
-      ))}
-    </div>
+          </span>
+        ))}
+      </span>
+    </span>
   );
 }
 
 function Calendario() {
   const ej = useApp((s) => s.ej());
   const h = hoy();
+  const sig = ej.hitos.findIndex((x) => new Date(x.fecha) >= h);
   const ini = new Date(ej.fechaCierre);
   const fin = new Date(ej.hitos[ej.hitos.length - 1].fecha);
-  const total = habilesEntre(ini, fin);
-  const pos = (d: Date) => Math.max(0, Math.min(1, habilesEntre(ini, d) / total));
-  const hoyPos = pos(h);
+  const avance = Math.max(0, Math.min(1, habilesEntre(ini, h) / Math.max(1, habilesEntre(ini, fin))));
   return (
-    <div className="px-5 py-4">
-      <div className="flex items-baseline justify-between mb-4">
-        <Label>Calendario de hitos · días hábiles desde el cierre</Label>
-        <span className="text-[11px] text-ink3">Cierre {fechaCorta(ej.fechaCierre)}</span>
+    <div className="px-4 py-4">
+      <div className="flex items-baseline justify-between gap-3 mb-1">
+        <Label>Calendario de hitos</Label>
+        <span className="text-[11px] text-ink3 whitespace-nowrap">Cierre {fechaCorta(ej.fechaCierre)}</span>
       </div>
-      <div className="relative h-[92px] mx-2">
-        <div className="absolute top-[34px] left-0 right-0 h-px bg-rule" />
-        <motion.div className="absolute top-[34px] left-0 h-px bg-accent" initial={{ width: 0 }} animate={{ width: `${hoyPos * 100}%` }} transition={{ duration: 1, delay: 0.3 }} />
+      <div className="text-[11px] text-ink3 mb-3">Días hábiles desde el cierre</div>
+      <div className="h-[3px] bg-rule2 mb-3">
+        <motion.div className="h-full bg-accent" initial={{ width: 0 }} animate={{ width: `${avance * 100}%` }} transition={{ duration: 1, delay: 0.3 }} />
+      </div>
+      <ol className="relative">
+        <span className="absolute left-[5px] top-2 bottom-2 w-px bg-rule" />
         {ej.hitos.map((x, i) => {
-          const p = pos(new Date(x.fecha));
-          const pasado = new Date(x.fecha) < h;
+          const pasado = sig === -1 || i < sig;
+          const actual = i === sig;
           return (
-            <div key={x.id} className="absolute top-0 -translate-x-1/2 text-center w-[90px]" style={{ left: `${p * 100}%` }}>
-              <div className={`text-[10.5px] leading-tight ${i % 2 ? "mt-[46px]" : ""} ${pasado ? "text-ink3" : "text-ink2"}`} style={{ order: i % 2 }}>
-                {i % 2 === 0 && (
-                  <>
-                    <div className="font-medium text-ink">D+{x.dh}</div>
-                    <div className="truncate">{x.nombre}</div>
-                  </>
-                )}
-              </div>
-              <span className="absolute left-1/2 -translate-x-1/2 top-[30px] w-[9px] h-[9px] border" style={{ background: pasado ? "var(--accent)" : "var(--panel)", borderColor: "var(--accent)" }} />
-              {i % 2 === 1 && (
-                <div className="text-[10.5px] leading-tight text-ink2">
-                  <div className="font-medium text-ink">D+{x.dh}</div>
-                  <div className="truncate">{x.nombre}</div>
-                </div>
-              )}
-            </div>
+            <li key={x.id} className="relative flex items-start gap-3 py-1.5">
+              <span className="relative z-[1] mt-[3px] w-[11px] h-[11px] shrink-0 border" style={{ background: pasado ? "var(--accent)" : "var(--panel)", borderColor: actual ? "var(--accent-3)" : "var(--accent)" }}>
+                {actual && <span className="absolute inset-[2px] live-dot" style={{ background: "var(--accent-3)" }} />}
+              </span>
+              <span className="w-10 shrink-0 text-[11.5px] font-semibold tnum">D+{x.dh}</span>
+              <span className={`flex-1 min-w-0 text-[12px] leading-snug ${pasado ? "text-ink3" : "text-ink"}`}>{x.nombre}</span>
+              <span className="text-[11px] tnum text-ink3 whitespace-nowrap">{fechaCorta(x.fecha)}</span>
+            </li>
           );
         })}
-        {hoyPos > 0 && hoyPos < 1 && (
-          <div className="absolute top-[22px] -translate-x-1/2" style={{ left: `${hoyPos * 100}%` }}>
-            <div className="w-px h-[25px] bg-ko mx-auto" />
-            <div className="text-[10px] text-ko font-medium -mt-[36px] text-center">Hoy</div>
-          </div>
-        )}
-      </div>
+      </ol>
     </div>
   );
 }
@@ -294,7 +287,7 @@ function NuevoEjercicio({ open, onClose }: { open: boolean; onClose: () => void 
         {paso === 1 && (
           <div>
             <div className="flex items-baseline gap-3 mb-3"><Label>Fecha de cierre</Label><span className="font-medium">{fechaLarga(fc)}</span></div>
-            <table className="tbl border border-rule">
+            <div className="overflow-x-auto"><table className="tbl border border-rule">
               <thead><tr><th>Hito</th><th>Día hábil</th><th>Fecha</th></tr></thead>
               <tbody>
                 {["Cargas completas", "Notas generadas y cuadradas", "Pre-aprobación de notas", "Revisión auditoría externa", "Sesión de Directorio", "Envío CMF y XBRL"].map((h, i) => {
@@ -302,7 +295,7 @@ function NuevoEjercicio({ open, onClose }: { open: boolean; onClose: () => void 
                   return <tr key={h}><td>{h}</td><td className="tnum">D+{hitos[i]}</td><td className="tnum">{fechaCorta(d)}</td></tr>;
                 })}
               </tbody>
-            </table>
+            </table></div>
           </div>
         )}
         {paso === 2 && (
@@ -419,6 +412,7 @@ export default function Portada() {
       <Encabezado
         n="01"
         titulo={`${ej.periodo} · ${soc?.nombre}`}
+        tag={<EstadoEEFF />}
         sub={<>Cierre al {fechaLarga(ej.fechaCierre)} · Responsable del proceso {usuario(ej.responsable).nombre}</>}
         acciones={<>
           <button className="btn" onClick={() => setParam(true)}><SlidersHorizontal size={14} /> Parámetros</button>
@@ -426,11 +420,8 @@ export default function Portada() {
           {tiene(perfiles, "proceso", "admin") && <button className="btn btn-p" onClick={() => { sp.set("nuevo", "1"); setSp(sp); }}><Plus size={14} /> Nuevo ejercicio</button>}
         </>}
       />
-      <motion.div {...d(0)} className="px-6 py-3 border-b border-rule bg-panel">
-        <EstadosEjercicio />
-      </motion.div>
 
-      <div className="grid grid-cols-[1fr_1fr_1fr_1fr_1.35fr] bg-panel border-b border-rule">
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-[1fr_1fr_1fr_1fr_1.35fr] bg-panel border-b border-rule [&>*]:border-b [&>*]:border-rule xl:[&>*]:border-b-0">
         {kpis.map((k, i) => (
           <motion.div key={k.label} {...d(i + 1)} className="px-6 py-4 border-r border-rule">
             <Label>{k.label}</Label>
@@ -471,12 +462,12 @@ export default function Portada() {
         </div>
       </motion.div>
 
-      <div className="p-6 grid grid-cols-[1fr_380px] gap-5">
-        <motion.div {...d(7)}><Tablero /></motion.div>
-        <motion.div {...d(8)} className="space-y-5">
+      <div className="p-6 grid grid-cols-1 2xl:grid-cols-[minmax(0,1fr)_380px] gap-5 items-start">
+        <motion.div {...d(7)} className="min-w-0"><Tablero /></motion.div>
+        <motion.div {...d(8)} className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-1 gap-5 content-start">
           <Pendientes />
           <div className="bg-panel border border-rule"><Calendario /></div>
-          <div className="bg-panel border border-rule px-4 py-3">
+          <div className="bg-panel border border-rule px-4 py-3 md:col-span-2 2xl:col-span-1">
             <Label className="mb-2">Accesos por perfil</Label>
             <div className="flex flex-wrap gap-1.5">
               {TRACKS.filter((t) => t.perfiles.some((p) => perfiles.includes(p))).map((t) => <span key={t.id} className="text-[11.5px] border border-rule px-2 py-0.5 text-ink2"><span className="tnum text-ink3 mr-1">{t.n}</span>{t.nombre}</span>)}
@@ -486,7 +477,7 @@ export default function Portada() {
       </div>
 
       <Historicos open={sp.get("historicos") === "1"} onClose={() => cerrar("historicos")} />
-      <NuevoEjercicio open={sp.get("nuevo") === "1"} onClose={() => cerrar("nuevo")} />
+      <NuevoEjercicio open={sp.get("nuevo") === "1" && tiene(perfiles, "proceso", "admin")} onClose={() => cerrar("nuevo")} />
       <Parametros open={param} onClose={() => setParam(false)} />
       {/* Descarga rápida del tablero para el comité */}
       <span className="hidden"><Download /></span>

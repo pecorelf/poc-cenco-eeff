@@ -86,11 +86,11 @@ export default function Directorio() {
         </div>
         {tab === "historial" ? (
           <div className="bg-panel border border-rule">
-            <table className="tbl"><thead><tr><th>Fecha</th><th>Usuario</th><th>Acción</th><th>Versión</th></tr></thead>
-              <tbody>{log.filter((e) => e.track === "Aprobación Directorio" && e.ejercicio === ej.periodo).map((e) => <tr key={e.id}><td className="tnum text-ink2 whitespace-nowrap">{fechaHora(e.fecha)}</td><td>{usuario(e.usuario).nombre}</td><td>{e.accion}{e.despues && <div className="text-[11px] text-ink3">{e.despues}</div>}</td><td className="tnum">{e.version}</td></tr>)}</tbody></table>
+            <div className="overflow-x-auto"><table className="tbl"><thead><tr><th>Fecha</th><th>Usuario</th><th>Acción</th><th>Versión</th></tr></thead>
+              <tbody>{log.filter((e) => e.track === "Aprobación Directorio" && e.ejercicio === ej.periodo).map((e) => <tr key={e.id}><td className="tnum text-ink2 whitespace-nowrap">{fechaHora(e.fecha)}</td><td>{usuario(e.usuario).nombre}</td><td>{e.accion}{e.despues && <div className="text-[11px] text-ink3">{e.despues}</div>}</td><td className="tnum">{e.version}</td></tr>)}</tbody></table></div>
           </div>
         ) : (
-          <div className="grid grid-cols-[1fr_360px] gap-4 items-start">
+          <div className="grid grid-cols-1 2xl:grid-cols-[minmax(0,1fr)_340px] gap-4 items-start">
             <LectorInforme ej={ej} pack={pack} cliente={cliente} comentarios={ej.comentarios} onComentar={esDir && enRevision ? (n) => setNuevo({ nota: n }) : undefined}
               sello={
                 <AnimatePresence>
@@ -164,10 +164,10 @@ export default function Directorio() {
       <Modal open={confirmar} onClose={() => setConfirmar(false)} width={560} title="Aprobación final del informe financiero"
         footer={<><button className="btn" onClick={() => setConfirmar(false)}>Cancelar</button><button className="btn btn-p" onClick={() => { aprobar(); setConfirmar(false); setSello(true); toast("Informe aprobado · acta generada · ejercicio en solo lectura", "ok"); }}><Stamp size={14} /> Aprobar y generar acta</button></>}>
         <div className="text-[12.5px] text-ink2 mb-3">Se aprueba el pre-informe v{ej.preinforme?.version} de {soc?.nombre} al {fechaLarga(ej.fechaCierre)}. La fecha de hoy quedará registrada como fecha de aprobación del Directorio en la Nota 1.</div>
-        <table className="tbl">
+        <div className="overflow-x-auto"><table className="tbl">
           <thead><tr><th>Nivel</th><th>Aprobador</th><th>Versión</th></tr></thead>
           <tbody>{acta?.map((a) => <tr key={a.nivel}><td>{a.nivel}</td><td>{usuario(a.nombre).nombre}</td><td>{a.version}</td></tr>)}</tbody>
-        </table>
+        </table></div>
       </Modal>
     </div>
   );

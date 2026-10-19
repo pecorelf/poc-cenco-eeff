@@ -81,7 +81,7 @@ function Semaforos({ ej }: { ej: ReturnType<ReturnType<typeof useApp.getState>["
           <motion.div key={e} initial={{ width: 0 }} animate={{ width: `${(c[e] / total) * 100}%` }} transition={{ duration: 0.8, ease: [0.2, 0.8, 0.2, 1] }} style={{ background: COLOR[e], opacity: e === "Pendiente" ? 0.35 : 1 }} />
         ))}
       </div>
-      <div className="grid grid-cols-5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
         {ESTADOS.map((e) => (
           <div key={e} className="px-4 py-3 border-r border-rule2 last:border-r-0">
             <div className="flex items-center gap-1.5 text-[11.5px] text-ink3">
@@ -299,7 +299,7 @@ function DetalleFuente({ id, onClose, ext, lanzar }: { id: string | null; onClos
             <Label>Hallazgos de validación · v{f.version}</Label>
             <button className="btn btn-sm btn-g" onClick={reporte}><Download size={13} /> Reporte de errores</button>
           </div>
-          <table className="tbl">
+          <div className="overflow-x-auto"><table className="tbl">
             <thead><tr><th>Fila</th><th>Columna</th><th>Regla incumplida</th><th>Tipo</th></tr></thead>
             <tbody>
               {f.errores!.map((e, i) => (
@@ -309,7 +309,7 @@ function DetalleFuente({ id, onClose, ext, lanzar }: { id: string | null; onClos
                 </motion.tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
           {f.estado === "Validada" && advert.length > 0 && bloqueantes.length === 0 && puede && (
             <div className="mt-3 p-3 bg-paper border border-rule">
               <label className="flex items-start gap-2 text-[12px] cursor-pointer">
@@ -326,14 +326,14 @@ function DetalleFuente({ id, onClose, ext, lanzar }: { id: string | null; onClos
       <div className="px-5 py-4">
         <Label className="mb-2">Versiones</Label>
         {f.versiones.length === 0 ? <div className="text-[12px] text-ink3">Sin cargas en este ejercicio.</div> : (
-          <table className="tbl">
+          <div className="overflow-x-auto"><table className="tbl">
             <thead><tr><th>Versión</th><th>Fecha</th><th>Usuario</th><th>Archivo / ejecución</th><th>Resultado</th></tr></thead>
             <tbody>
               {[...f.versiones].reverse().map((v) => (
                 <tr key={v.v}><td className="tnum">v{v.v}</td><td className="tnum whitespace-nowrap">{fechaHora(v.fecha)}</td><td className="whitespace-nowrap">{usuario(v.usuario).nombre}</td><td className="text-ink2 max-w-[180px] truncate">{v.archivo}</td><td className="whitespace-nowrap">{v.resultado}</td></tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         )}
       </div>
     </Drawer>
@@ -392,7 +392,7 @@ function Homologacion() {
           <span className="text-[11.5px] text-ink3">Tabla vigente {ej.parametros.homologacion}</span>
         </div>
         {ej.homologacionPendiente.length === 0 ? <div className="px-4 py-4 text-[12px] text-ink3">No hay cuentas nuevas en el consolidado del periodo.</div> : (
-          <table className="tbl">
+          <div className="overflow-x-auto"><table className="tbl">
             <thead><tr><th>Cuenta</th><th>Nombre</th><th className="num">Saldo M$</th><th>Nota</th><th>Línea sugerida</th><th>Asignación</th><th /></tr></thead>
             <tbody>
               {ej.homologacionPendiente.map((h) => {
@@ -425,19 +425,19 @@ function Homologacion() {
                 );
               })}
             </tbody>
-          </table>
+          </table></div>
         )}
       </div>
       <div className="bg-panel border border-rule">
         <div className="px-4 h-11 flex items-center border-b border-rule"><div className="font-medium text-[13px]">Maestro de homologación · cuenta → rubro → concepto → línea de nota</div></div>
-        <table className="tbl">
+        <div className="overflow-x-auto"><table className="tbl">
           <thead><tr><th>Cuenta</th><th>Rubro</th><th>Concepto</th><th>Nota</th><th>Línea</th></tr></thead>
           <tbody>
             {muestra.map((m, i) => (
               <tr key={i}><td className="tnum">{m.c.codigo}</td><td>{pack.cuentaPrefijos[m.c.codigo.slice(0, 2)] ?? pack.cuentaPrefijos[m.c.codigo.slice(0, 1)] ?? "—"}</td><td className="text-ink2">{m.c.nombre}</td><td className="tnum">{m.n}</td><td>{m.linea}</td></tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
         <div className="px-4 py-2 text-[11px] text-ink3 border-t border-rule2">{miles(pack.fuentes.find((f) => f.id === "homolog")?.registros ?? 0)} cuentas homologadas · cada cambio genera una versión del maestro</div>
       </div>
     </div>
@@ -450,7 +450,7 @@ function Documentos() {
   return (
     <div className="bg-panel border border-rule">
       <div className="px-4 h-11 flex items-center border-b border-rule"><div className="font-medium text-[13px]">Repositorio documental del ejercicio · alimenta al Agente de texto</div></div>
-      <table className="tbl">
+      <div className="overflow-x-auto"><table className="tbl">
         <thead><tr><th>ID</th><th>Documento</th><th>Tipo</th><th>Notas</th><th>Contenido</th></tr></thead>
         <tbody>
           {pack.documentos.map((d) => (
@@ -463,7 +463,7 @@ function Documentos() {
             </tr>
           ))}
         </tbody>
-      </table>
+      </table></div>
       <div className="px-4 py-2 text-[11px] text-ink3 border-t border-rule2">Asociados a {ej.periodo}</div>
     </div>
   );
@@ -502,15 +502,15 @@ export default function Carga() {
       <div className="p-6 space-y-5">
         <Semaforos ej={ej} />
         {sinHomologar > 0 && tab !== "homologacion" && (
-          <motion.button initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} onClick={() => setTab("homologacion")} className="w-full flex items-center gap-3 px-4 py-2.5 bg-panel border text-left" style={{ borderColor: "var(--ko)" }}>
+          <motion.button initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} onClick={() => setTab("homologacion")} className="w-full flex flex-wrap items-center gap-3 px-4 py-2.5 bg-panel border text-left" style={{ borderColor: "var(--ko)" }}>
             <AlertTriangle size={15} className="text-ko" />
-            <span className="text-[12.5px] flex-1">{sinHomologar} cuenta nueva en el consolidado sin línea de nota asignada. Bloquea la Nota {ej.homologacionPendiente.find((h) => !h.asignada)?.nota}.</span>
+            <span className="text-[12.5px] flex-1 min-w-[260px]">{sinHomologar} cuenta nueva en el consolidado sin línea de nota asignada. Bloquea la Nota {ej.homologacionPendiente.find((h) => !h.asignada)?.nota}.</span>
             <span className="text-[12px] text-accent font-medium">Revisar homologación</span>
           </motion.button>
         )}
-        <div className="flex gap-0 border-b border-rule">
+        <div className="flex flex-wrap gap-0 border-b border-rule">
           {TABS.map((t) => (
-            <button key={t.id} onClick={() => setTab(t.id)} className={`relative px-4 h-9 text-[12.5px] ${tab === t.id ? "font-medium text-ink" : "text-ink2 hover:text-ink"}`}>
+            <button key={t.id} onClick={() => setTab(t.id)} className={`relative px-4 h-9 text-[12.5px] whitespace-nowrap ${tab === t.id ? "font-medium text-ink" : "text-ink2 hover:text-ink"}`}>
               {t.n} <span className="text-ink3 tnum ml-1">{t.c}</span>
               {tab === t.id && <motion.span layoutId="tabcarga" className="absolute left-0 right-0 -bottom-px h-[2px] bg-accent" />}
             </button>
@@ -523,8 +523,8 @@ export default function Carga() {
               <select className="inp !w-auto !h-7 text-[12px]" value={fTipo} onChange={(e) => setFTipo(e.target.value)}><option value="">Integradas y manuales</option><option value="integrada">Integradas</option><option value="manual">Manuales</option></select>
               <select className="inp !w-auto !h-7 text-[12px]" value={fEstado} onChange={(e) => setFEstado(e.target.value)}><option value="">Todos los estados</option>{ESTADOS.map((e) => <option key={e}>{e}</option>)}</select>
             </div>
-            <table className="tbl">
-              <thead><tr><th>Fuente</th><th>Tipo</th><th>Obligatoriedad</th><th>Responsable</th><th className="num">Notas</th><th>Estado</th><th>Última carga</th><th className="num">Registros</th><th className="w-[190px]" /></tr></thead>
+            <div className="overflow-x-auto"><table className="tbl min-w-[1080px]">
+              <thead><tr><th className="min-w-[260px]">Fuente</th><th>Tipo</th><th>Obligatoriedad</th><th>Resp.</th><th className="num">Notas</th><th>Estado</th><th>Última carga</th><th className="num">Registros</th><th className="w-[180px]" /></tr></thead>
               <tbody>
                 {filas.map((d) => {
                   const f = ej.fuentes.find((x) => x.id === d.id)!;
@@ -532,14 +532,14 @@ export default function Carga() {
                   return (
                     <tr key={d.id} className="cursor-pointer" onClick={() => setParams({ f: d.id })}>
                       <td><div className="flex items-center gap-2">{d.tipo === "integrada" ? <Database size={13} className="text-ink3 shrink-0" /> : <FileSpreadsheet size={13} className="text-ink3 shrink-0" />}<span>{d.nombre}</span></div><div className="text-[10.5px] text-ink3 ml-[21px]">{d.origen} · {d.formato}</div></td>
-                      <td className="text-ink2">{d.tipo === "integrada" ? "Integrada" : "Manual"}</td>
-                      <td className="text-ink2">{d.obligatoriedad}</td>
+                      <td className="text-ink2 whitespace-nowrap">{d.tipo === "integrada" ? "Integrada" : "Manual"}</td>
+                      <td className="text-ink2 whitespace-nowrap">{d.obligatoriedad}</td>
                       <td><Avatar id={d.responsable} size={20} /></td>
                       <td className="num">{nn}</td>
                       <td><motion.span key={f.estado + f.version} initial={{ opacity: 0.2 }} animate={{ opacity: 1 }} transition={{ duration: 0.6 }}><EstadoFuenteTag estado={f.estado} /></motion.span></td>
                       <td className="tnum text-ink2 whitespace-nowrap text-[11.5px]">{f.ultimaActualizacion ? fechaHora(f.ultimaActualizacion) : "—"}{f.version > 0 && <span className="text-ink3"> · v{f.version}</span>}</td>
                       <td className="num text-ink2">{f.registros ? miles(f.registros) : "—"}</td>
-                      <td onClick={(e) => e.stopPropagation()} className="text-right">
+                      <td onClick={(e) => e.stopPropagation()} className="text-right whitespace-nowrap">
                         {ext[d.id] ? <Progreso x={ext[d.id]} /> : d.tipo === "integrada" ? (
                           <button className="btn btn-sm" disabled={!puede} onClick={() => lanzar([d.id])}><RefreshCw size={12} /> Actualizar</button>
                         ) : (
@@ -550,7 +550,7 @@ export default function Carga() {
                   );
                 })}
               </tbody>
-            </table>
+            </table></div>
           </div>
         )}
         {tab === "completitud" && <Completitud />}

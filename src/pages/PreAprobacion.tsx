@@ -29,7 +29,7 @@ function Bandeja() {
         <select className="inp !w-auto !h-7 text-[12px]" value={fTipo} onChange={(e) => setFTipo(e.target.value)}><option value="">Todos los tipos</option><option>Automática</option><option>Híbrida</option><option>Texto</option></select>
       </div>
       {filas.length === 0 ? <div className="px-4 py-6 text-[12px] text-ink3">No hay notas pendientes de revisión.</div> : (
-        <table className="tbl">
+        <div className="overflow-x-auto"><table className="tbl">
           <thead><tr><th className="w-8">N°</th><th>Nota</th><th>Tipo</th><th>Responsable</th><th>Enviada</th><th>Antigüedad · SLA 2 días hábiles</th><th className="num">Versión</th><th /></tr></thead>
           <tbody>
             {filas.map((n, i) => {
@@ -47,7 +47,7 @@ function Bandeja() {
               );
             })}
           </tbody>
-        </table>
+        </table></div>
       )}
     </div>
   );
@@ -127,7 +127,7 @@ function Consolidado() {
 
   return (
     <div className="space-y-4">
-      <div className="bg-panel border border-rule grid grid-cols-5">
+      <div className="bg-panel border border-rule grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
         {pasos.map((p, i) => (
           <div key={p.t} className="px-4 py-3 border-r border-rule2 last:border-r-0 relative">
             <div className="flex items-center gap-2 text-[12px] font-medium">
@@ -139,7 +139,7 @@ function Consolidado() {
         ))}
       </div>
 
-      <div className="grid grid-cols-[1fr_380px] gap-4 items-start">
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-4 items-start">
         <div className="bg-panel border border-rule">
           <div className="px-4 h-11 flex items-center justify-between border-b border-rule">
             <span className="font-medium text-[13px] flex items-center gap-2"><FileStack size={15} className="text-accent" /> Pre-informe de estados financieros</span>
@@ -249,10 +249,10 @@ function Historial() {
         <span className="font-medium text-[13px]">Historial de revisiones y aprobaciones</span>
         <button className="btn btn-sm" onClick={() => descargarXlsx(`historial_preaprobacion_${ej.periodo.replace(" ", "")}.xlsx`, [{ nombre: "Historial", filas: [["Fecha", "Usuario", "Perfil", "Objeto", "Acción", "Versión", "Justificación"], ...filas.map((e) => [fechaHora(e.fecha), usuario(e.usuario).nombre, e.perfil, e.objeto, e.accion, e.version ?? "", e.justificacion ?? ""])], anchos: [16, 22, 22, 18, 50, 10, 40] }])}><Download size={13} /> Exportar</button>
       </div>
-      <table className="tbl">
+      <div className="overflow-x-auto"><table className="tbl">
         <thead><tr><th>Fecha</th><th>Usuario</th><th>Objeto</th><th>Acción</th><th>Versión</th></tr></thead>
         <tbody>{filas.slice(0, 80).map((e) => <tr key={e.id}><td className="tnum whitespace-nowrap text-ink2">{fechaHora(e.fecha)}</td><td className="whitespace-nowrap">{e.usuario === "sistema" ? "Plataforma" : usuario(e.usuario).nombre}</td><td>{e.objeto}</td><td>{e.accion}{e.justificacion && <div className="text-[11px] text-ink3">{e.justificacion}</div>}</td><td className="tnum">{e.version}</td></tr>)}</tbody>
-      </table>
+      </table></div>
     </div>
   );
 }
@@ -319,52 +319,56 @@ export function Revision() {
   const nav = useNavigate();
   const nota = ej.notas.find((x) => x.n === n);
   const def = pack.notas.find((d) => d.n === n);
-  const [modo, setModo] = useState<"traza" | "comentar">("traza");
+  const [modo, setModo] = useState<"traza" | "comentar">(() => (tiene(perfiles, "auditor") ? "comentar" : "traza"));
   const [traza, setTraza] = useState<CeldaSel | null>(null);
   const [comp, setComp] = useState<{ celda?: CeldaSel } | null>(null);
+  const [pop, setPop] = useState<{ celda: CeldaSel; rect: DOMRect } | null>(null);
   const [txt, setTxt] = useState("");
   const [dev, setDev] = useState(false);
   const [sello, setSello] = useState(false);
   if (!nota || !def) return <div className="p-6">Nota no encontrada.</div>;
-  const esAud = tiene(perfiles, "auditor") && ej.auditoria.estado === "en revisión";
+  const esAud = tiene(perfiles, "auditor") && !ej.historico;
   const esAprob = tiene(perfiles, "aprobador") && nota.estado === "Lista para revisión" && !ej.historico;
   const instancia: Comentario["instancia"] = esAud ? "Auditoría" : "Pre-aprobación";
+  const puedeComentar = esAprob || esAud;
   const coment = ej.comentarios.filter((c) => c.nota === n);
   const abiertos = coment.filter((c) => c.estado === "abierto").length;
   const vCongelada = nota.versiones.find((v) => v.v === nota.version);
 
   const registrarComentario = () => {
-    comentar({ nota: n, celda: comp?.celda ? { cuadro: comp.celda.cuadro, linea: comp.celda.linea } : undefined, instancia, texto: txt.trim() });
+    const celda = pop?.celda ?? comp?.celda;
+    comentar({ nota: n, celda: celda ? { cuadro: celda.cuadro, linea: celda.linea } : undefined, instancia, texto: txt.trim() });
     setTxt("");
     setComp(null);
-    toast("Observación registrada en la nota", "info");
+    setPop(null);
+    toast(`Observación registrada · se notificó a ${usuario(nota.responsable).nombre}`, "info");
   };
 
   return (
     <div>
       <div className="px-6 pt-4 pb-4 bg-panel border-b border-rule">
         <button className="text-[11.5px] text-ink3 hover:text-ink flex items-center gap-1 mb-1" onClick={() => nav("/preaprobacion")}><ArrowLeft size={12} /> Bandeja del aprobador</button>
-        <div className="flex items-end justify-between gap-6">
-          <div>
+        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+          <div className="min-w-0">
             <h1 className="text-[21px] font-semibold tracking-[-0.01em]">Revisión · Nota {n} · {def.titulo}</h1>
-            <div className="flex items-center gap-4 mt-1 text-[12px] text-ink2">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-[12px] text-ink2">
               <EstadoNotaTag estado={nota.estado} />
               <span className="flex items-center gap-1"><Lock size={12} /> Versión congelada v{nota.version}{vCongelada ? ` · ${fechaHora(nota.enviadaEl ?? vCongelada.fecha)}` : ""}</span>
               <span className="flex items-center gap-1.5"><Avatar id={nota.responsable} size={18} />{usuario(nota.responsable).nombre}</span>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <div className="flex border border-rule mr-2">
-              <button onClick={() => setModo("traza")} className={`px-3 h-[30px] text-[12px] ${modo === "traza" ? "bg-ink text-white" : ""}`}>Trazar cifras</button>
-              <button onClick={() => setModo("comentar")} className={`px-3 h-[30px] text-[12px] ${modo === "comentar" ? "bg-ink text-white" : ""}`}>Comentar celdas</button>
+              <button onClick={() => setModo("traza")} className={`px-3 h-[30px] text-[12px] whitespace-nowrap ${modo === "traza" ? "bg-ink text-white" : ""}`}>Trazar cifras</button>
+              <button onClick={() => setModo("comentar")} className={`px-3 h-[30px] text-[12px] whitespace-nowrap ${modo === "comentar" ? "bg-ink text-white" : ""}`}>Comentar celdas</button>
             </div>
-            <button className="btn" disabled={!esAprob && !esAud} onClick={() => setComp({})}><MessageSquarePlus size={14} /> Comentar nota</button>
+            <button className="btn" disabled={!puedeComentar} onClick={() => setComp({})}><MessageSquarePlus size={14} /> Comentar nota</button>
             <button className="btn" disabled={!esAprob} onClick={() => setDev(true)}><CornerUpLeft size={14} /> Devolver</button>
             <button className="btn btn-p" disabled={!esAprob || abiertos > 0} title={abiertos ? "No se puede aprobar con comentarios abiertos" : ""} onClick={() => { const e = aprobar(n); if (e) return toast(e, "ko"); setSello(true); toast(`Nota ${n} aprobada sobre v${nota.version}`, "ok"); setTimeout(() => { setSello(false); const sig = useApp.getState().ej().notas.find((x) => x.estado === "Lista para revisión"); nav(sig ? `/preaprobacion/${sig.n}` : "/preaprobacion"); }, 1500); }}><Check size={14} /> Aprobar v{nota.version}</button>
           </div>
         </div>
       </div>
-      <div className="p-6 grid grid-cols-[1fr_360px] gap-4 items-start relative">
+      <div className="p-6 grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-4 items-start relative">
         <AnimatePresence>
           {sello && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 z-10 flex items-start justify-center pt-24 pointer-events-none">
@@ -373,30 +377,69 @@ export function Revision() {
           )}
         </AnimatePresence>
         <div className="space-y-4 min-w-0">
-          {modo === "comentar" && <div className="text-[11.5px] px-3 py-2 border border-dashed border-accent text-accent bg-accentSoft">Modo comentario: selecciona una cifra para dejar una observación en esa celda.</div>}
+          {modo === "comentar" && <div className="text-[11.5px] px-3 py-2 border border-dashed border-accent text-accent bg-accentSoft">{puedeComentar ? "Modo comentario: selecciona una cifra para dejar una observación en esa celda." : "Tu perfil puede revisar la nota, pero no registrar observaciones en ella."}</div>}
           {nota.texto && (
             <div className="bg-panel border border-rule">
               <div className="px-4 h-10 flex items-center border-b border-rule font-medium text-[12.5px]">Texto de la nota</div>
               <div className="px-4 py-3 text-[12.5px] whitespace-pre-wrap leading-[1.65]">{nota.texto}</div>
             </div>
           )}
-          {nota.cuadros.map((c) => <TablaCuadro key={c.id} c={c} ej={ej} nota={nota} comentarios={coment} onCifra={(s) => (modo === "traza" ? setTraza(s) : (esAprob || esAud) && setComp({ celda: s }))} />)}
+          {nota.cuadros.map((c) => <TablaCuadro key={c.id} c={c} ej={ej} nota={nota} comentarios={coment} onCifra={(sel, rect) => {
+            if (modo === "traza") return setTraza(sel);
+            if (!puedeComentar) return toast("Tu perfil no registra observaciones en esta nota", "ko");
+            setTxt("");
+            setPop({ celda: sel, rect: rect ?? new DOMRect(window.innerWidth / 2, 200, 0, 0) });
+          }} />)}
           {nota.cuadros.length > 0 && <PanelControles controles={nota.controles} animar={false} />}
           {nota.ajustes.length > 0 && (
             <div className="bg-panel border border-rule">
               <div className="px-4 h-10 flex items-center border-b border-rule font-medium text-[12.5px]">Ajustes manuales aplicados</div>
-              <table className="tbl"><thead><tr><th>Celda</th><th className="num">Monto</th><th>Justificación</th><th>Usuario</th></tr></thead>
-                <tbody>{nota.ajustes.map((a) => <tr key={a.id}><td>{nota.cuadros.find((c) => c.id === a.cuadro)?.lineas.find((l) => l.id === a.linea)?.label}</td><td className="num">{miles(a.monto)}</td><td className="text-ink2">{a.justificacion}</td><td>{usuario(a.usuario).nombre}</td></tr>)}</tbody></table>
+              <div className="overflow-x-auto"><table className="tbl"><thead><tr><th>Celda</th><th className="num">Monto</th><th>Justificación</th><th>Usuario</th></tr></thead>
+                <tbody>{nota.ajustes.map((a) => <tr key={a.id}><td>{nota.cuadros.find((c) => c.id === a.cuadro)?.lineas.find((l) => l.id === a.linea)?.label}</td><td className="num">{miles(a.monto)}</td><td className="text-ink2">{a.justificacion}</td><td>{usuario(a.usuario).nombre}</td></tr>)}</tbody></table></div>
             </div>
           )}
         </div>
-        <div className="bg-panel border border-rule sticky top-4">
+        <div className="bg-panel border border-rule xl:sticky xl:top-4">
           <div className="px-4 h-10 flex items-center justify-between border-b border-rule"><span className="font-medium text-[12.5px]">Observaciones</span><span className="text-[11.5px] text-ink3">{abiertos} abiertas</span></div>
           <div className="max-h-[60vh] overflow-auto"><HiloComentarios comentarios={coment} nota={nota} def={def} puedeResponder={false} /></div>
         </div>
       </div>
 
       <Trazabilidad sel={traza} nota={nota} def={def} onClose={() => setTraza(null)} />
+      <AnimatePresence>
+        {pop && (() => {
+          const c = nota.cuadros.find((x) => x.id === pop.celda.cuadro);
+          const l = c?.lineas.find((x) => x.id === pop.celda.linea);
+          const valor = pop.celda.col === "actual" ? l?.actual : pop.celda.col === "comp" ? l?.comp : l?.trim;
+          const w = 380;
+          const left = Math.max(12, Math.min(pop.rect.right - w, window.innerWidth - w - 12));
+          const abajo = pop.rect.bottom + 260 < window.innerHeight;
+          const top = abajo ? pop.rect.bottom + 8 : Math.max(12, pop.rect.top - 252);
+          return (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setPop(null)} />
+              <motion.div initial={{ opacity: 0, y: abajo ? -6 : 6, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.16 }}
+                className="fixed z-50 bg-panel border shadow-[0_8px_24px_rgba(22,33,44,0.14)]" style={{ left, top, width: w, borderColor: "var(--accent)" }}>
+                <div className="px-4 pt-3 pb-2 border-b border-rule">
+                  <div className="text-[11px] text-ink3">{instancia === "Auditoría" ? "Observación de auditoría externa" : "Observación de pre-aprobación"} · Nota {n}</div>
+                  <div className="text-[12.5px] font-medium leading-snug">{c?.titulo} · {l?.label}</div>
+                  <div className="text-[12px] tnum text-accent">M$ {valor !== undefined ? miles(valor) : "—"}</div>
+                </div>
+                <div className="p-3">
+                  <textarea autoFocus className="inp" rows={3} value={txt} onChange={(e) => setTxt(e.target.value)} placeholder="Describe la observación sobre esta cifra" onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && txt.trim().length >= 8) registrarComentario(); }} />
+                  <div className="flex items-center justify-between mt-2">
+                    <span className="text-[10.5px] text-ink3">Queda como hilo abierto en la celda</span>
+                    <div className="flex gap-2">
+                      <button className="btn btn-sm" onClick={() => setPop(null)}>Cancelar</button>
+                      <button className="btn btn-sm btn-p" disabled={txt.trim().length < 8} onClick={registrarComentario}>Registrar</button>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </>
+          );
+        })()}
+      </AnimatePresence>
       <Modal open={Boolean(comp)} onClose={() => setComp(null)} width={500} title={comp?.celda ? "Observación en celda" : "Observación en la nota"}
         footer={<><button className="btn" onClick={() => setComp(null)}>Cancelar</button><button className="btn btn-p" disabled={txt.trim().length < 8} onClick={registrarComentario}>Registrar</button></>}>
         {comp?.celda && <div className="text-[12px] mb-3 px-3 py-2 bg-paper border border-rule">{nota.cuadros.find((c) => c.id === comp.celda!.cuadro)?.titulo} · <strong>{nota.cuadros.find((c) => c.id === comp.celda!.cuadro)?.lineas.find((l) => l.id === comp.celda!.linea)?.label}</strong></div>}

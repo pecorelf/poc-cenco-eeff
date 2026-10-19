@@ -61,6 +61,8 @@ interface Estado {
   actualizarDependiente: (n: number) => void;
   confirmarAjuste: (n: number, a: Omit<Ajuste, "id" | "usuario" | "fecha" | "estado">) => void;
   descartarAjuste: (n: number, a: Omit<Ajuste, "id" | "usuario" | "fecha" | "estado">) => void;
+  confirmarAjustes: (n: number, items: { cuadro: string; linea: string; monto: number }[], justificacion: string) => void;
+  descartarAjustes: (n: number, cantidad: number) => void;
   aceptarTexto: (n: number, texto: string) => void;
   enviarRevision: (n: number) => string | null;
 
@@ -124,7 +126,7 @@ export const useApp = create<Estado>()(
         if (c === cacheCfg && cacheCli) return cacheCli;
         const base = CLIENTES[c.cliente];
         cacheCfg = c;
-        cacheCli = { ...base, colores: c.colores[c.cliente] ?? base.colores, logo: c.logos[c.cliente] };
+        cacheCli = { ...base, colores: c.colores[c.cliente] ?? base.colores, logo: c.logos[c.cliente] ?? base.logo };
         return cacheCli;
       };
       const ej = () => get().ejercicios.find((e) => e.id === get().ejercicioId) ?? get().ejercicios[0];
@@ -367,6 +369,27 @@ export const useApp = create<Estado>()(
             registrar({ track: "Generación de notas", objeto: `Nota ${n} · ${linea?.label}`, accion: "Ajuste manual confirmado", antes: `M$ ${((linea?.actual ?? 0) - a.monto).toLocaleString("es-CL")}`, despues: `M$ ${(linea?.actual ?? 0).toLocaleString("es-CL")}`, justificacion: a.justificacion, version: `v${nota.version}` });
           }),
 
+        confirmarAjustes: (n, items, justificacion) =>
+          mut((e) => {
+            const nota = e.notas.find((x) => x.n === n)!;
+            const def = pack().notas.find((d) => d.n === n)!;
+            const soc = cliente().sociedades.find((s) => s.id === e.sociedad)!;
+            const u = get().usuarioId ?? "";
+            const fecha = new Date().toISOString();
+            const antes = Object.fromEntries(nota.cuadros.flatMap((c) => c.lineas.map((l) => [`${c.id}|${l.id}`, { v: l.actual, label: `${c.titulo} · ${l.label}` }])));
+            items.forEach((it) => nota.ajustes.push({ ...it, justificacion, id: uid("a"), usuario: u, fecha, estado: "confirmado" }));
+            nota.cuadros = calcularCuadros(def, e, soc.escala, nota.ajustes);
+            nota.version += 1;
+            nota.controles = evaluarControles(def, nota, e, pack());
+            nota.versiones.push(nuevaVersion(nota, u, `${items.length} ajuste${items.length > 1 ? "s" : ""} manual${items.length > 1 ? "es" : ""}: ${justificacion}`));
+            items.forEach((it) => {
+              const a = antes[`${it.cuadro}|${it.linea}`];
+              registrar({ track: "Generación de notas", objeto: `Nota ${n} · ${a?.label ?? it.linea}`, accion: "Ajuste manual confirmado", antes: `M$ ${(a?.v ?? 0).toLocaleString("es-CL")}`, despues: `M$ ${((a?.v ?? 0) + it.monto).toLocaleString("es-CL")}`, justificacion, version: `v${nota.version}` });
+            });
+          }),
+
+        descartarAjustes: (n, cantidad) => registrar({ track: "Generación de notas", objeto: `Nota ${n}`, accion: "Ajustes manuales descartados (capa provisoria)", despues: `${cantidad} montos` }),
+
         descartarAjuste: (n, a) => registrar({ track: "Generación de notas", objeto: `Nota ${n}`, accion: "Ajuste manual descartado", despues: `M$ ${a.monto.toLocaleString("es-CL")}`, justificacion: a.justificacion }),
 
         aceptarTexto: (n, texto) =>
@@ -406,7 +429,8 @@ export const useApp = create<Estado>()(
             e.comentarios.push({ ...c, id: uid("c"), fecha: new Date().toISOString(), estado: "abierto", respuestas: [], autor: get().usuarioId ?? "" });
             if (c.nota !== null) {
               const n = e.notas.find((x) => x.n === c.nota);
-              if (n && c.instancia === "Auditoría") {
+              // Solo la revisión formal de auditoría (consolidado pre-aprobado) devuelve la nota y el consolidado.
+              if (n && c.instancia === "Auditoría" && e.auditoria.estado === "en revisión") {
                 n.estado = "En corrección";
                 n.versionAprobada = undefined;
                 e.consolidadoPreaprobado = false;
@@ -590,7 +614,7 @@ export const useApp = create<Estado>()(
       };
     },
     {
-      name: "eeff-poc-v1",
+      name: "eeff-poc-v2",
       storage: createJSONStorage(() => localStorage),
       partialize: (s) => ({ config: s.config, escenario: s.escenario, ejercicios: s.ejercicios.filter((e) => !e.historico), ejercicioId: s.ejercicioId, log: s.log, inicializado: s.inicializado, usuarioId: s.usuarioId, perfilActivo: s.perfilActivo }),
       onRehydrateStorage: () => (s) => {

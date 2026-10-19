@@ -6,7 +6,7 @@ import { useApp } from "../engine/store";
 import { TRACKS, etapaIndice, pendientesCarga, porEstado, aprobacionesPendientes } from "../engine/derivados";
 import { USUARIOS, usuario, correo } from "../config/users";
 import { PERFIL_NOMBRE } from "../engine/types";
-import { DeloitteLogo, ClienteMarca, Avatar, usePerfiles, Toasts } from "./ui";
+import { DeloitteLogo, ClienteMarca, Avatar, usePerfiles, tiene, Toasts } from "./ui";
 import { Asistente } from "./Asistente";
 import { fechaCorta } from "../engine/util";
 
@@ -87,14 +87,15 @@ function SelectorEjercicio() {
   const sel = useApp((s) => s.seleccionarEjercicio);
   const nav = useNavigate();
   const soc = (id: string) => cliente.sociedades.find((s) => s.id === id)?.nombre;
+  const puedeCrear = tiene(usePerfiles(), "proceso", "admin");
   return (
-    <div className="relative">
-      <button className="flex items-center gap-3 h-8 px-3 border border-rule bg-panel hover:border-ink3" onClick={() => setOpen(!open)}>
-        <span className="font-semibold tnum">{ej.periodo}</span>
-        <span className="text-ink2">{soc(ej.sociedad)}</span>
-        <span className="text-ink3">·</span>
-        <span className="text-[12px]" style={{ color: ej.historico ? "var(--ink-3)" : "var(--accent)" }}>{ej.estado}</span>
-        <ChevronDown size={14} className="text-ink3" />
+    <div className="relative min-w-0 shrink">
+      <button className="flex items-center gap-2 h-8 px-3 border border-rule bg-panel hover:border-ink3 min-w-0 max-w-full whitespace-nowrap" onClick={() => setOpen(!open)} title={`${ej.periodo} · ${soc(ej.sociedad)} · ${ej.estado}`}>
+        <span className="font-semibold tnum shrink-0">{ej.periodo}</span>
+        <span className="text-ink2 truncate min-w-0 hidden md:inline">{soc(ej.sociedad)}</span>
+        <span className="text-ink3 hidden lg:inline">·</span>
+        <span className="text-[12px] shrink-0 hidden lg:inline" style={{ color: ej.historico ? "var(--ink-3)" : "var(--accent)" }}>{ej.estado}</span>
+        <ChevronDown size={14} className="text-ink3 shrink-0" />
       </button>
       <AnimatePresence>
         {open && (
@@ -110,7 +111,7 @@ function SelectorEjercicio() {
               ))}
               <div className="border-t border-rule flex">
                 <button className="flex-1 h-9 text-[12.5px] hover:bg-paper" onClick={() => { setOpen(false); nav("/inicio?historicos=1"); }}>Ejercicios históricos</button>
-                <button className="flex-1 h-9 text-[12.5px] border-l border-rule hover:bg-paper" onClick={() => { setOpen(false); nav("/inicio?nuevo=1"); }}>Nuevo ejercicio</button>
+                {puedeCrear && <button className="flex-1 h-9 text-[12.5px] border-l border-rule hover:bg-paper" onClick={() => { setOpen(false); nav("/inicio?nuevo=1"); }}>Nuevo ejercicio</button>}
               </div>
             </motion.div>
           </>
@@ -129,12 +130,12 @@ function MenuUsuario() {
   const nav = useNavigate();
   const u = usuario(uid);
   return (
-    <div className="relative">
+    <div className="relative shrink-0">
       <button className="flex items-center gap-2 h-8 pl-1 pr-2 hover:bg-rule2" onClick={() => setOpen(!open)}>
         <Avatar id={uid} size={24} />
-        <span className="text-left leading-tight">
+        <span className="text-left leading-tight hidden md:block whitespace-nowrap">
           <span className="block text-[12px] font-medium">{u.nombre}</span>
-          <span className="block text-[10.5px] text-ink3">{u.perfiles.map((p) => PERFIL_NOMBRE[p]).join(" · ")}</span>
+          <span className="block text-[10.5px] text-ink3 hidden xl:block">{u.perfiles.map((p) => PERFIL_NOMBRE[p]).join(" · ")}</span>
         </span>
         <ChevronDown size={13} className="text-ink3" />
       </button>
@@ -174,22 +175,22 @@ export function Shell({ children }: { children: ReactNode }) {
   const perfiles = usePerfiles();
   return (
     <div className="h-full flex flex-col">
-      <header className="h-12 shrink-0 flex items-center gap-4 px-4 bg-panel border-b border-rule">
-        <DeloitteLogo h={22} />
-        <span className="w-px h-6 bg-rule" />
-        <span className="text-[12.5px] font-medium text-ink2 whitespace-nowrap">Cierre EEFF y Notas</span>
+      <header className="h-12 shrink-0 flex items-center gap-3 xl:gap-4 px-4 bg-panel border-b border-rule min-w-0">
+        <span className="shrink-0"><DeloitteLogo h={22} /></span>
+        <span className="w-px h-6 bg-rule shrink-0" />
+        <span className="text-[12.5px] font-medium text-ink2 whitespace-nowrap hidden xl:inline">Cierre EEFF y Notas</span>
         <SelectorEjercicio />
-        {ej.historico && <span className="text-[11.5px] text-ink3">Solo lectura · cerrado el {fechaCorta(ej.aprobadoEl ?? ej.fechaCierre)}</span>}
+        {ej.historico && <span className="text-[11.5px] text-ink3 whitespace-nowrap hidden 2xl:inline">Solo lectura · cerrado el {fechaCorta(ej.aprobadoEl ?? ej.fechaCierre)}</span>}
         <div className="flex-1" />
-        <button className={`btn btn-sm ${asistente ? "btn-d" : ""}`} onClick={() => setAsistente(!asistente)}>
-          <Bot size={14} /> Agente del proceso
+        <button className={`btn btn-sm shrink-0 ${asistente ? "btn-d" : ""}`} onClick={() => setAsistente(!asistente)} title="Agente del proceso">
+          <Bot size={14} /> <span className="hidden lg:inline">Agente del proceso</span>
         </button>
         <MenuUsuario />
-        <span className="w-px h-6 bg-rule" />
-        <ClienteMarca h={22} />
+        <span className="w-px h-6 bg-rule shrink-0" />
+        <span className="shrink-0"><ClienteMarca h={34} /></span>
       </header>
       <div className="flex-1 flex min-h-0">
-        <aside className="w-[244px] shrink-0 border-r border-rule flex flex-col bg-paper">
+        <aside className="w-[200px] xl:w-[244px] shrink-0 border-r border-rule flex flex-col bg-paper">
           <Riel />
           <div className="mx-4 my-3 border-t border-rule" />
           <NavLink to="/auditoria" className={({ isActive }) => `mx-1.5 flex items-center gap-2.5 px-[14px] h-9 text-[12.5px] ${isActive ? "bg-panel border border-rule font-medium" : "text-ink2 hover:text-ink border border-transparent"}`}>
@@ -215,15 +216,18 @@ export function Shell({ children }: { children: ReactNode }) {
   );
 }
 
-export function Encabezado({ n, titulo, sub, acciones }: { n?: string; titulo: string; sub?: ReactNode; acciones?: ReactNode }) {
+export function Encabezado({ n, titulo, sub, acciones, tag }: { n?: string; titulo: string; sub?: ReactNode; acciones?: ReactNode; tag?: ReactNode }) {
   return (
-    <div className="flex items-end justify-between gap-6 px-6 pt-5 pb-4 border-b border-rule bg-panel">
+    <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3 px-6 pt-5 pb-4 border-b border-rule bg-panel">
       <div className="min-w-0">
         {n && <div className="text-[11px] text-ink3 tnum mb-0.5">Track {n}</div>}
-        <h1 className="text-[21px] font-semibold tracking-[-0.01em] leading-tight">{titulo}</h1>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <h1 className="text-[21px] font-semibold tracking-[-0.01em] leading-tight">{titulo}</h1>
+          {tag}
+        </div>
         {sub && <div className="text-[12.5px] text-ink2 mt-1">{sub}</div>}
       </div>
-      {acciones && <div className="flex items-center gap-2 shrink-0">{acciones}</div>}
+      {acciones && <div className="flex flex-wrap items-center gap-2">{acciones}</div>}
     </div>
   );
 }

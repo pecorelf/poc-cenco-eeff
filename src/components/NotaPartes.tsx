@@ -19,95 +19,146 @@ export function columnas(ej: Ejercicio, c: { comparativo: CuadroCalc["comparativ
 
 export interface CeldaSel { cuadro: string; linea: string; col: "actual" | "comp" | "trim" }
 
+/** Convierte un monto escrito en formato es-CL (con puntos, coma o paréntesis) a número. */
+export function parseMonto(t: string): number | null {
+  const limpio = t.trim();
+  if (!limpio) return null;
+  const neg = /^\(.*\)$/.test(limpio) || limpio.startsWith("-");
+  const num = Number(limpio.replace(/[()\-\s$]/g, "").replace(/\./g, "").replace(",", "."));
+  if (!Number.isFinite(num)) return null;
+  return Math.round(neg ? -num : num);
+}
+
+export interface EdicionCuadro {
+  /** Valores escritos por el usuario, por clave "cuadro|linea". */
+  valores: Record<string, string>;
+  /** Cuadro original (antes de la capa provisoria). */
+  original: CuadroCalc;
+  onCambiar: (clave: string, texto: string) => void;
+}
+
 /** Cuadro en formato de presentación. Cada línea abre sus cuentas; cada cifra abre su trazabilidad. */
 export function TablaCuadro({
-  c, ej, nota, onCifra, onComentarCelda, destacar, comentarios = [], flash
+  c, ej, nota, onCifra, onComentarCelda, destacar, comentarios = [], flash, edicion, idAncla
 }: {
-  c: CuadroCalc; ej: Ejercicio; nota: NotaRun; onCifra?: (s: CeldaSel) => void; onComentarCelda?: (s: CeldaSel) => void;
-  destacar?: string[]; comentarios?: Comentario[]; flash?: boolean;
+  c: CuadroCalc; ej: Ejercicio; nota: NotaRun; onCifra?: (s: CeldaSel, rect?: DOMRect) => void; onComentarCelda?: (s: CeldaSel) => void;
+  destacar?: string[]; comentarios?: Comentario[]; flash?: boolean; edicion?: EdicionCuadro; idAncla?: string;
 }) {
   const [abiertas, setAbiertas] = useState<Record<string, boolean>>({});
   const col = columnas(ej, c);
   const conTrim = c.comparativo === "mismo_periodo";
   const nuevas = ej.homologacionPendiente.filter((h) => h.nota === nota.n && !h.asignada);
+  const ajustesDe = (linea: string) => nota.ajustes.filter((a) => a.estado === "confirmado" && a.cuadro === c.id && a.linea === linea);
+  const cambiadas = edicion ? c.lineas.filter((l) => l.kind !== "total" && edicion.valores[`${c.id}|${l.id}`] !== undefined && parseMonto(edicion.valores[`${c.id}|${l.id}`]) !== edicion.original.lineas.find((o) => o.id === l.id)?.actual).length : 0;
   return (
-    <div className="bg-panel border border-rule">
-      <div className="flex items-center justify-between px-4 h-10 border-b border-rule">
+    <div id={idAncla} className={`bg-panel border scroll-mt-4 ${edicion ? "border-[color:var(--accent-3)]" : "border-rule"}`}>
+      <div className="flex flex-wrap items-center justify-between gap-2 px-4 min-h-10 py-2 border-b border-rule">
         <div className="font-medium text-[12.5px]">{c.titulo}</div>
-        <div className="text-[11px] text-ink3">M$ · estructura fija</div>
+        <div className="text-[11px] text-ink3 flex items-center gap-3">
+          {edicion && cambiadas > 0 && <span className="font-medium" style={{ color: "var(--accent-3)" }}>{cambiadas} monto{cambiadas > 1 ? "s" : ""} en capa provisoria</span>}
+          <span>M$ · estructura fija</span>
+        </div>
       </div>
-      <table className="tbl">
-        <thead>
-          <tr>
-            <th>Concepto</th>
-            {conTrim && <th className="num">{col.trim}</th>}
-            <th className="num">{col.act}</th>
-            <th className="num">{col.comp}</th>
-            <th className="num w-[90px]">Var. %</th>
-          </tr>
-        </thead>
-        <tbody>
-          {c.lineas.map((l, li) => {
-            const esTot = l.kind === "total";
-            const comentsLinea = comentarios.filter((x) => x.celda?.cuadro === c.id && x.celda.linea === l.id && x.estado === "abierto");
-            const v = l.comp ? ((l.actual - l.comp) / Math.abs(l.comp)) * 100 : 0;
-            const celda = (col: CeldaSel["col"], valor: number | undefined) => (
-              <td className={`num ${esTot ? "font-semibold" : ""}`}>
-                <span className="inline-flex items-center justify-end gap-1">
-                  {col === "actual" && l.ajuste ? <span title={`Incluye ajuste manual M$ ${miles(l.ajuste)}`} className="w-[5px] h-[5px] rotate-45" style={{ background: "var(--accent-3)" }} /> : null}
-                  <button
-                    onClick={() => onCifra?.({ cuadro: c.id, linea: l.id, col })}
-                    onContextMenu={(e) => { if (onComentarCelda) { e.preventDefault(); onComentarCelda({ cuadro: c.id, linea: l.id, col }); } }}
-                    className={`tnum px-1 -mx-1 ${onCifra ? "hover:bg-accentSoft hover:text-accent cursor-pointer" : ""}`}
-                    title={onCifra ? "Ver trazabilidad de la cifra" : undefined}
-                  >
-                    {valor === undefined ? "" : miles(valor)}
-                  </button>
-                </span>
-              </td>
-            );
-            return (
-              <Fragment key={l.id}>
-                <motion.tr
-                  initial={flash ? { opacity: 0, y: 4 } : false}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: li * 0.04 }}
-                  className={`${esTot ? "[&>td]:border-t [&>td]:border-t-ink3 [&>td]:bg-paper" : ""} ${destacar?.includes(l.id) ? "flash-ko" : ""}`}
-                >
-                  <td className={esTot ? "font-semibold" : ""}>
-                    <span className="inline-flex items-center gap-1">
-                      {!esTot && l.cuentas.length > 0 ? (
-                        <button className="text-ink3 hover:text-ink" onClick={() => setAbiertas({ ...abiertas, [l.id]: !abiertas[l.id] })} aria-label="Ver cuentas">
-                          <ChevronRight size={13} className={`transition-transform ${abiertas[l.id] ? "rotate-90" : ""}`} />
-                        </button>
-                      ) : <span className="w-[13px]" />}
-                      {l.label}
-                      {l.editable && !esTot && <span title="Celda habilitada para ajuste manual" className="text-[9.5px] text-ink3 border border-rule px-1 ml-1">ajustable</span>}
-                      {comentsLinea.length > 0 && <span className="inline-flex items-center gap-0.5 text-[10.5px] ml-1" style={{ color: comentsLinea.some((x) => x.instancia === "Directorio") ? "var(--accent-3)" : "var(--warn)" }}><MessageSquare size={11} />{comentsLinea.length}</span>}
-                      {esTot && nuevas.length > 0 && c === nota.cuadros[0] && <span className="text-[10.5px] text-ko ml-2 font-normal inline-flex items-center gap-1"><AlertTriangle size={11} /> cuenta sin asignar</span>}
+      <div className="overflow-x-auto">
+        <table className="tbl min-w-[620px]">
+          <thead>
+            <tr>
+              <th>Concepto</th>
+              {conTrim && <th className="num">{col.trim}</th>}
+              <th className="num">{col.act}</th>
+              <th className="num">{col.comp}</th>
+              <th className="num w-[90px]">Var. %</th>
+            </tr>
+          </thead>
+          <tbody>
+            {c.lineas.map((l, li) => {
+              const esTot = l.kind === "total";
+              const comentsLinea = comentarios.filter((x) => x.celda?.cuadro === c.id && x.celda.linea === l.id && x.estado === "abierto");
+              const v = l.comp ? ((l.actual - l.comp) / Math.abs(l.comp)) * 100 : 0;
+              const clave = `${c.id}|${l.id}`;
+              const orig = edicion?.original.lineas.find((o) => o.id === l.id);
+              const provisoria = edicion && orig && orig.actual !== l.actual;
+              const ajs = ajustesDe(l.id);
+              const ajustada = !esTot && (l.ajuste ?? 0) !== 0;
+              const celda = (colId: CeldaSel["col"], valor: number | undefined) => {
+                if (colId === "actual" && edicion && !esTot) {
+                  const texto = edicion.valores[clave] ?? miles(orig?.actual ?? l.actual);
+                  return (
+                    <td className="num py-1" style={provisoria ? { background: "color-mix(in srgb, var(--accent-3) 22%, white)" } : undefined}>
+                      <input
+                        className="w-[140px] h-7 px-2 text-right tnum border bg-white focus:outline-none"
+                        style={{ borderColor: provisoria ? "var(--accent-3)" : "var(--rule)" }}
+                        value={texto}
+                        onFocus={(e) => e.currentTarget.select()}
+                        onChange={(e) => edicion.onCambiar(clave, e.target.value)}
+                        aria-label={`Monto ${l.label}`}
+                      />
+                      {provisoria && <div className="text-[10.5px] text-ink3 tnum leading-tight mt-0.5"><span className="line-through">{miles(orig!.actual)}</span> · {l.actual - orig!.actual > 0 ? "+" : ""}{miles(l.actual - orig!.actual)}</div>}
+                    </td>
+                  );
+                }
+                const marcaAjuste = colId === "actual" && ajustada;
+                const marcaProv = colId === "actual" && provisoria;
+                return (
+                  <td className={`num ${esTot ? "font-semibold" : ""}`} style={marcaAjuste || marcaProv ? { background: "color-mix(in srgb, var(--accent-3) 18%, white)", boxShadow: "inset 2px 0 0 var(--accent-3)" } : undefined}
+                    title={marcaAjuste ? `Ajustado: original M$ ${miles(l.actual - (l.ajuste ?? 0))} · ajuste M$ ${miles(l.ajuste ?? 0)}${ajs[0] ? ` · ${ajs.map((a) => a.justificacion).join(" / ")}` : ""}` : undefined}>
+                    <span className="inline-flex items-center justify-end gap-1">
+                      {marcaAjuste && <span className="text-[9.5px] font-semibold uppercase tracking-wide" style={{ color: "#9a5a00" }}>ajustado</span>}
+                      <button
+                        onClick={(e) => onCifra?.({ cuadro: c.id, linea: l.id, col: colId }, (e.currentTarget as HTMLElement).getBoundingClientRect())}
+                        onContextMenu={(e) => { if (onComentarCelda) { e.preventDefault(); onComentarCelda({ cuadro: c.id, linea: l.id, col: colId }); } }}
+                        className={`tnum px-1 -mx-1 ${onCifra ? "hover:bg-accentSoft hover:text-accent cursor-pointer" : ""}`}
+                        title={onCifra ? "Ver trazabilidad de la cifra" : undefined}
+                      >
+                        {valor === undefined ? "" : miles(valor)}
+                      </button>
                     </span>
+                    {marcaAjuste && <div className="text-[10.5px] text-ink3 tnum leading-tight"><span className="line-through">{miles(l.actual - (l.ajuste ?? 0))}</span> · {(l.ajuste ?? 0) > 0 ? "+" : ""}{miles(l.ajuste ?? 0)}</div>}
                   </td>
-                  {conTrim && celda("trim", l.trim)}
-                  {celda("actual", l.actual)}
-                  {celda("comp", l.comp)}
-                  <td className="num text-ink2 text-[11.5px]">{l.comp ? pct(v) : "—"}</td>
-                </motion.tr>
-                <AnimatePresence>
-                  {abiertas[l.id] && l.cuentas.map((cu, k) => (
-                    <motion.tr key={cu.codigo} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ delay: k * 0.03 }} className="text-[11.5px] text-ink2 [&>td]:bg-paper">
-                      <td className="pl-10"><span className="tnum text-ink3 mr-2">{cu.codigo}</span>{cu.nombre}{cu.nueva && <span className="ml-1 text-accent">· homologada en este periodo</span>}</td>
-                      {conTrim && <td />}
-                      <td className="num" title={`$ ${miles(cu.pesos)}`}>{miles(Math.round(cu.pesos / 1000))}</td>
-                      <td className="num">{cu.pesosComp ? miles(Math.round(cu.pesosComp / 1000)) : "—"}</td>
-                      <td className="num text-ink3">$ {miles(cu.pesos)}</td>
-                    </motion.tr>
-                  ))}
-                </AnimatePresence>
-              </Fragment>
-            );
-          })}
-        </tbody>
-      </table>
+                );
+              };
+              return (
+                <Fragment key={l.id}>
+                  <motion.tr
+                    initial={flash ? { opacity: 0, y: 4 } : false}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: li * 0.04 }}
+                    className={`${esTot ? "[&>td]:border-t [&>td]:border-t-ink3 [&>td]:bg-paper" : ""} ${destacar?.includes(l.id) ? "flash-ko" : ""}`}
+                  >
+                    <td className={esTot ? "font-semibold" : ""}>
+                      <span className="inline-flex items-center gap-1 flex-wrap">
+                        {!esTot && l.cuentas.length > 0 ? (
+                          <button className="text-ink3 hover:text-ink" onClick={() => setAbiertas({ ...abiertas, [l.id]: !abiertas[l.id] })} aria-label="Ver cuentas">
+                            <ChevronRight size={13} className={`transition-transform ${abiertas[l.id] ? "rotate-90" : ""}`} />
+                          </button>
+                        ) : <span className="w-[13px]" />}
+                        {l.label}
+                        {comentsLinea.length > 0 && <span className="inline-flex items-center gap-0.5 text-[10.5px] ml-1" style={{ color: comentsLinea.some((x) => x.instancia === "Directorio") ? "var(--accent-3)" : "var(--warn)" }}><MessageSquare size={11} />{comentsLinea.length}</span>}
+                        {esTot && nuevas.length > 0 && c === nota.cuadros[0] && <span className="text-[10.5px] text-ko ml-2 font-normal inline-flex items-center gap-1"><AlertTriangle size={11} /> cuenta sin asignar</span>}
+                      </span>
+                    </td>
+                    {conTrim && celda("trim", l.trim)}
+                    {celda("actual", l.actual)}
+                    {celda("comp", l.comp)}
+                    <td className="num text-ink2 text-[11.5px]">{l.comp ? pct(v) : "—"}</td>
+                  </motion.tr>
+                  <AnimatePresence>
+                    {abiertas[l.id] && l.cuentas.map((cu, k) => (
+                      <motion.tr key={cu.codigo} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ delay: k * 0.03 }} className="text-[11.5px] text-ink2 [&>td]:bg-paper">
+                        <td className="pl-10"><span className="tnum text-ink3 mr-2">{cu.codigo}</span>{cu.nombre}{cu.nueva && <span className="ml-1 text-accent">· homologada en este periodo</span>}</td>
+                        {conTrim && <td />}
+                        <td className="num" title={`$ ${miles(cu.pesos)}`}>{miles(Math.round(cu.pesos / 1000))}</td>
+                        <td className="num">{cu.pesosComp ? miles(Math.round(cu.pesosComp / 1000)) : "—"}</td>
+                        <td className="num text-ink3 whitespace-nowrap">$ {miles(cu.pesos)}</td>
+                      </motion.tr>
+                    ))}
+                  </AnimatePresence>
+                </Fragment>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -134,7 +185,7 @@ export function PanelControles({ controles, animar = true, onTrazar }: { control
         <div className="font-medium text-[12.5px]">Controles y cuadraturas</div>
         <div className="text-[11.5px]">{paso >= controles.length ? (ko ? <span className="text-ko font-medium">{ko} bloqueante{ko > 1 ? "s" : ""} con diferencia</span> : <span className="text-ok font-medium">Todos los bloqueantes OK</span>) : <span className="text-ink3">Verificando…</span>}</div>
       </div>
-      <table className="tbl">
+      <div className="overflow-x-auto"><table className="tbl">
         <thead><tr><th className="w-6" /><th>Control</th><th>Tipo</th><th className="num">Esperado</th><th className="num">Obtenido</th><th className="num">Resultado</th></tr></thead>
         <tbody>
           {controles.map((c, i) => {
@@ -162,7 +213,7 @@ export function PanelControles({ controles, animar = true, onTrazar }: { control
             );
           })}
         </tbody>
-      </table>
+      </table></div>
       <div className="px-4 py-2 text-[10.5px] text-ink3 border-t border-rule2">Tolerancia de redondeo M$ {TOLERANCIA} · resultados asociados a la versión vigente</div>
     </div>
   );
@@ -330,13 +381,11 @@ export function HiloComentarios({ comentarios, nota, def, puedeResponder = true 
           <motion.div key={c.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={`px-4 py-3 ${c.estado === "resuelto" ? "opacity-60" : ""}`}>
             <div className="flex items-center gap-2 text-[11.5px]">
               <Avatar id={c.autor} size={20} />
-              <span className="font-medium">{usuario(c.autor).nombre}</span>
-              <span className="px-1.5 h-[18px] inline-flex items-center text-[10.5px] border" style={{ color: COLOR_INST[c.instancia], borderColor: COLOR_INST[c.instancia] }}>{c.instancia}</span>
-              <span className="text-ink3">{fechaHora(c.fecha)}</span>
-              <span className="flex-1" />
-              <span className={c.estado === "abierto" ? "text-warn" : "text-ok"}>{c.estado === "abierto" ? "Abierto" : "Resuelto"}</span>
+              <span className="font-medium truncate min-w-0">{usuario(c.autor).nombre}</span>
+              <span className="px-1.5 h-[18px] inline-flex items-center text-[10.5px] border whitespace-nowrap shrink-0" style={{ color: COLOR_INST[c.instancia], borderColor: COLOR_INST[c.instancia] }}>{c.instancia}</span>
+              <span className={`ml-auto whitespace-nowrap shrink-0 ${c.estado === "abierto" ? "text-warn" : "text-ok"}`}>{c.estado === "abierto" ? "Abierto" : "Resuelto"}</span>
             </div>
-            {(c.celda || c.nota) && <div className="text-[10.5px] text-ink3 mt-1 ml-7">{c.nota ? `Nota ${c.nota}` : "Informe general"}{cuadro ? ` · ${cuadro}` : ""}{linea ? ` · celda "${linea.label}"` : ""}</div>}
+            <div className="text-[10.5px] text-ink3 mt-1 ml-7 tnum">{fechaHora(c.fecha)}{(c.celda || c.nota) && <> · {c.nota ? `Nota ${c.nota}` : "Informe general"}{cuadro ? ` · ${cuadro}` : ""}{linea ? ` · celda "${linea.label}"` : ""}</>}</div>
             <div className="text-[12.5px] mt-1 ml-7">{c.texto}</div>
             {c.respuestas.map((r, i) => (
               <div key={i} className="ml-7 mt-2 flex gap-2 text-[12px]">
@@ -345,7 +394,7 @@ export function HiloComentarios({ comentarios, nota, def, puedeResponder = true 
               </div>
             ))}
             {c.estado === "abierto" && (
-              <div className="ml-7 mt-2 flex gap-2">
+              <div className="ml-7 mt-2 flex flex-wrap gap-2">
                 {puedeResponder && (
                   <>
                     <input className="inp !h-7 text-[12px]" placeholder="Responder…" value={resp[c.id] ?? ""} onChange={(e) => setResp({ ...resp, [c.id]: e.target.value })} onKeyDown={(e) => { if (e.key === "Enter" && resp[c.id]?.trim()) { responder(c.id, resp[c.id]); setResp({ ...resp, [c.id]: "" }); } }} />
@@ -372,7 +421,7 @@ export function Versiones({ nota }: { nota: NotaRun }) {
   const va = vs[Math.min(a, vs.length - 1)], vb = vs[Math.min(b, vs.length - 1)];
   const filas = vb.snapshot.map((s) => ({ ...s, antes: va.snapshot.find((x) => x.c === s.c && x.l === s.l)?.a }));
   return (
-    <div className="grid grid-cols-[300px_1fr] gap-4">
+    <div className="grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)] gap-4">
       <div className="bg-panel border border-rule">
         <div className="px-4 h-10 flex items-center border-b border-rule font-medium text-[12.5px]">Historial</div>
         {[...vs].reverse().map((v) => {
@@ -394,7 +443,7 @@ export function Versiones({ nota }: { nota: NotaRun }) {
       </div>
       <div className="bg-panel border border-rule">
         <div className="px-4 h-10 flex items-center gap-2 border-b border-rule font-medium text-[12.5px]"><GitCompare size={14} /> Comparación v{va.v} → v{vb.v}</div>
-        <table className="tbl">
+        <div className="overflow-x-auto"><table className="tbl">
           <thead><tr><th>Línea</th><th className="num">v{va.v}</th><th className="num">v{vb.v}</th><th className="num">Diferencia</th></tr></thead>
           <tbody>
             {filas.map((f, i) => {
@@ -409,7 +458,7 @@ export function Versiones({ nota }: { nota: NotaRun }) {
               );
             })}
           </tbody>
-        </table>
+        </table></div>
         {va.texto !== vb.texto && vb.texto && (
           <div className="px-4 py-3 border-t border-rule text-[12px]">
             <Label className="mb-1">Texto de la nota · v{vb.v}</Label>
@@ -455,10 +504,10 @@ export function VistaIntermedia({ nota, def, ej }: { nota: NotaRun; def: NotaDef
         <div className="font-medium text-[12.5px]">{titulo}</div>
         <div className="text-[11px] text-ink3">Vista de trabajo · no se publica · mismas fuentes y versión v{nota.version}</div>
       </div>
-      <table className="tbl">
+      <div className="overflow-x-auto"><table className="tbl">
         <thead><tr>{head.map((h, i) => <th key={h} className={i ? "num" : ""}>{h}</th>)}</tr></thead>
         <tbody>{filas.map((f, i) => <motion.tr key={i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.05 }} className={def.n === 26 && i === filas.length - 1 ? "[&>td]:font-semibold [&>td]:border-t [&>td]:border-t-ink3" : ""}>{f.map((x, j) => <td key={j} className={j ? "num" : ""}>{x}</td>)}</motion.tr>)}</tbody>
-      </table>
+      </table></div>
       {def.n === 35 && <div className="px-4 py-2 text-[11px] text-ink3 border-t border-rule2">Tipo de cambio de cierre USD {num(tc)} · parámetros v{ej.parametros.version}</div>}
     </div>
   );
