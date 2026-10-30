@@ -46,7 +46,7 @@ interface Estado {
 
   // portada
   seleccionarEjercicio: (id: string) => void;
-  nuevoEjercicio: (o: { anio: number; trimestre: 1 | 2 | 3 | 4; sociedad: string; copiar: boolean; fechaCierre?: string }) => string | null;
+  nuevoEjercicio: (o: { anio: number; trimestre: 1 | 2 | 3 | 4; sociedad: string; copiar: boolean; fechaCierre?: string; parametros?: { uf: number; usdCierre: number; usdPromedio: number[] }; responsables?: Record<number, string> }) => string | null;
   actualizarParametros: (p: Partial<Ejercicio["parametros"]>) => number[];
   asignarResponsable: (n: number, u: string) => void;
 
@@ -238,12 +238,14 @@ export const useApp = create<Estado>()(
           const abiertos = get().ejercicios.filter((e) => !e.historico && e.estado !== "Cerrado");
           if (abiertos.some((e) => e.anio === o.anio && e.trimestre === o.trimestre && e.sociedad === o.sociedad)) return "Ya existe un ejercicio abierto para ese periodo y sociedad.";
           if (historicos(pack(), cliente(), periodoEnCurso()).some((e) => e.anio === o.anio && e.trimestre === o.trimestre && e.sociedad === o.sociedad)) return "Ese periodo ya está cerrado. Solo el Administrador puede reabrirlo.";
-          const nuevo = crearEjercicio(pack(), cliente(), { ...o, responsable: get().usuarioId ?? "u_proceso" });
+          const nuevo = crearEjercicio(pack(), cliente(), { anio: o.anio, trimestre: o.trimestre, sociedad: o.sociedad, fechaCierre: o.fechaCierre, responsable: get().usuarioId ?? "u_proceso" });
           if (o.copiar) {
             const ref = ej();
             nuevo.notas.forEach((n) => (n.responsable = ref.notas.find((x) => x.n === n.n)?.responsable ?? n.responsable));
             nuevo.parametros.homologacion = ref.parametros.homologacion + " (copia)";
           }
+          if (o.parametros) nuevo.parametros = { ...nuevo.parametros, ...o.parametros };
+          if (o.responsables) nuevo.notas.forEach((n) => (n.responsable = o.responsables![n.n] ?? n.responsable));
           set({ ejercicios: [...get().ejercicios, nuevo], ejercicioId: nuevo.id });
           registrar({ track: "Portada", objeto: "Ejercicio", accion: "Creación del ejercicio", despues: `${nuevo.periodo} · ${cliente().sociedades.find((s) => s.id === o.sociedad)?.nombre}`, version: "v1" });
           return null;

@@ -111,8 +111,8 @@ function Campana() {
               <div className="max-h-[360px] overflow-auto">
                 {items.map((p) => (
                   <button key={p.id} onClick={() => { setOpen(false); nav(p.ruta); }} className="w-full flex items-start gap-3 px-4 py-2.5 text-left hover:bg-accentSoft">
-                    {p.tipo === "Control KO" || p.tipo === "Corregir" ? <AlertCircle size={18} className="text-ko shrink-0 mt-0.5" /> : <Info size={18} className="text-accent shrink-0 mt-0.5" />}
-                    <span className="min-w-0"><span className="block text-[12.5px] font-semibold text-ink">{p.tipo}</span><span className="block text-[12px] text-ink2 truncate">{p.texto}</span></span>
+                    {p.tipo === "Control KO" || p.tipo === "Corregir" || p.tipo === "Revisar homologación" ? <AlertCircle size={18} className="text-ko shrink-0 mt-0.5" /> : <Info size={18} className="text-accent shrink-0 mt-0.5" />}
+                    <span className="min-w-0"><span className="block text-[12.5px] font-semibold text-ink">{p.tipo}</span><span className={`block text-[12px] text-ink2 ${p.id === "homologacion" ? "" : "truncate"}`}>{p.texto}</span></span>
                   </button>
                 ))}
               </div>

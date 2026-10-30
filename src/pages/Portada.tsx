@@ -4,10 +4,9 @@ import { motion } from "motion/react";
 import { Plus, SlidersHorizontal, ChevronRight, Download, AlertTriangle, Lock } from "lucide-react";
 import { useApp } from "../engine/store";
 import { Encabezado } from "../components/Shell";
-import { FlujoNotas } from "../components/Flujo";
 import { Buscador, Filtros, CabeceraListado, normalizar } from "../components/Listado";
 import { Label, Num, EstadoNotaTag, Semaforo, Modal, Avatar, usePerfiles, tiene, OkKo } from "../components/ui";
-import { porEstado, proximoHito, pendientesCarga, aprobacionesPendientes, misPendientes, TRACKS } from "../engine/derivados";
+import { porEstado, proximoHito, pendientesCarga, aprobacionesPendientes, misPendientes } from "../engine/derivados";
 import { ESTADOS_EJERCICIO, ESTADOS_NOTA, type EstadoNota, type TipoNota } from "../engine/types";
 import { historicos } from "../engine/generator";
 import { periodoEnCurso, fechaCorta, hoy, habilesEntre, fechaLarga, finTrimestre } from "../engine/util";
@@ -237,12 +236,25 @@ function NuevoEjercicio({ open, onClose }: { open: boolean; onClose: () => void 
   const [socs, setSocs] = useState<string[]>([cliente.sociedades[cliente.sociedades.length - 1].id]);
   const [copiar, setCopiar] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const ref = useApp((s) => s.ej());
+  const pack = useApp((s) => s.pack());
+  const [uf, setUf] = useState(ref.parametros.uf);
+  const [usd, setUsd] = useState(ref.parametros.usdCierre);
+  const [usdProm, setUsdProm] = useState<number[]>(ref.parametros.usdPromedio);
+  const [resp, setResp] = useState<Record<number, string>>({});
   const fc = finTrimestre(anio, tri);
-  const pasos = ["Periodo y sociedades", "Fecha de cierre e hitos", "Comparativos", "Parametrización"];
-  useEffect(() => { if (open) { setPaso(0); setError(null); } }, [open]);
+  const pasos = ["Periodo y sociedades", "Fecha de cierre e hitos", "Parametrización"];
+  useEffect(() => {
+    if (open) {
+      setPaso(0); setError(null); setCopiar(true);
+      setUf(ref.parametros.uf); setUsd(ref.parametros.usdCierre); setUsdProm(ref.parametros.usdPromedio);
+      setResp(Object.fromEntries(ref.notas.map((n) => [n.n, n.responsable])));
+    }
+  }, [open]);
+  const responsablesNota = USUARIOS.filter((u) => u.perfiles.includes("nota"));
   const crear = () => {
     for (const s of socs) {
-      const err = nuevo({ anio, trimestre: tri, sociedad: s, copiar });
+      const err = nuevo({ anio, trimestre: tri, sociedad: s, copiar, parametros: { uf, usdCierre: usd, usdPromedio: usdProm }, responsables: copiar ? resp : undefined });
       if (err) { setError(`${cliente.sociedades.find((x) => x.id === s)?.nombre}: ${err}`); return; }
     }
     toast(`Ejercicio ${tri}T ${anio} creado`, "ok");
@@ -254,7 +266,7 @@ function NuevoEjercicio({ open, onClose }: { open: boolean; onClose: () => void 
     <Modal open={open} onClose={onClose} title="Nuevo ejercicio financiero" width={700}
       footer={<>
         {paso > 0 && <button className="btn" onClick={() => setPaso(paso - 1)}>Anterior</button>}
-        {paso < 3 ? <button className="btn btn-p" disabled={!socs.length} onClick={() => setPaso(paso + 1)}>Siguiente</button> : <button className="btn btn-p" onClick={crear}>Crear ejercicio</button>}
+        {paso < 2 ? <button className="btn btn-p" disabled={!socs.length} onClick={() => setPaso(paso + 1)}>Siguiente</button> : <button className="btn btn-p" onClick={crear}>Crear ejercicio</button>}
       </>}>
       <div className="flex mb-5 border border-rule">
         {pasos.map((x, i) => (
@@ -298,23 +310,42 @@ function NuevoEjercicio({ open, onClose }: { open: boolean; onClose: () => void 
           </div>
         )}
         {paso === 2 && (
-          <div className="space-y-2">
-            <p className="text-[12.5px] text-ink2 mb-3">La plataforma trae los comparativos desde los ejercicios históricos aprobados.</p>
-            {[["Cierre del año anterior", `4T ${anio - 1}`, "Estado de situación y notas de saldos"], ["Mismo periodo del año anterior", `${tri}T ${anio - 1}`, "Estado de resultados y notas de resultado"]].map(([a, b, c]) => (
-              <div key={a} className="flex items-center gap-4 border border-rule px-4 py-3">
-                <span className="w-2 h-2 bg-ok" />
-                <div className="flex-1"><div className="font-medium">{a}</div><div className="text-[11.5px] text-ink3">{c}</div></div>
-                <span className="tnum font-medium">{b}</span><span className="text-[11.5px] text-ok">Aprobado · disponible</span>
-              </div>
-            ))}
-          </div>
-        )}
-        {paso === 3 && (
           <div>
-            <label className="flex items-start gap-3 border border-rule px-4 py-3 cursor-pointer">
+            <label className="flex items-start gap-3 border border-rule px-4 py-3 cursor-pointer mb-4">
               <input type="checkbox" className="mt-1" checked={copiar} onChange={(e) => setCopiar(e.target.checked)} />
-              <span><span className="font-medium block">Copiar la parametrización del ejercicio anterior</span><span className="text-[12px] text-ink2">Responsables por nota, maestros y tabla de homologación vigente.</span></span>
+              <span><span className="font-medium block">Copiar la parametrización del ejercicio anterior</span><span className="text-[12px] text-ink2">Responsables por nota, maestros y tabla de homologación vigente ({ref.parametros.homologacion}).</span></span>
             </label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+              <div><Label className="mb-1">Fecha del periodo</Label><div className="h-[30px] flex items-center tnum">{fechaCorta(fc)}</div></div>
+              <div><Label className="mb-1">Valor UF de cierre</Label><input className="inp tnum" type="number" step="0.01" value={uf} onChange={(e) => setUf(Number(e.target.value))} /></div>
+              <div><Label className="mb-1">Dólar observado de cierre</Label><input className="inp tnum" type="number" step="0.01" value={usd} onChange={(e) => setUsd(Number(e.target.value))} /></div>
+              <div><Label className="mb-1">Homologación vigente</Label><div className="h-[30px] flex items-center tnum text-[12.5px]">{copiar ? `${ref.parametros.homologacion} (copia)` : "Tabla base"}</div></div>
+            </div>
+            <Label className="mb-1">Dólar promedio mensual</Label>
+            <div className="grid grid-cols-3 gap-4 mb-4">
+              {usdProm.map((v, i) => (
+                <label key={i} className="block"><span className="text-[11px] text-ink3">Mes {(tri - 1) * 3 + i + 1}</span><input className="inp tnum" type="number" step="0.01" value={v} onChange={(e) => setUsdProm(usdProm.map((x, k) => (k === i ? Number(e.target.value) : x)))} /></label>
+              ))}
+            </div>
+            {copiar && (
+              <>
+                <Label className="mb-1">Responsable por nota</Label>
+                <div className="border border-rule max-h-[220px] overflow-auto">
+                  <table className="tbl">
+                    <thead><tr><th className="w-10">N°</th><th>Nota</th><th className="w-52">Responsable</th></tr></thead>
+                    <tbody>
+                      {pack.notas.map((d) => (
+                        <tr key={d.n}>
+                          <td className="tnum text-ink3">{d.n}</td>
+                          <td>{d.titulo}</td>
+                          <td><select className="inp !h-7 text-[12px]" value={resp[d.n] ?? ""} onChange={(e) => setResp({ ...resp, [d.n]: e.target.value })}>{responsablesNota.map((u) => <option key={u.id} value={u.id}>{u.nombre}</option>)}</select></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
             {error && <div className="mt-3 text-ko text-[12.5px] flex gap-2"><AlertTriangle size={14} className="mt-0.5" />{error}</div>}
           </div>
         )}
@@ -446,32 +477,11 @@ export default function Portada() {
         </motion.div>
       </div>
 
-      <motion.div {...d(6)} className="mx-6 mt-5 bg-panel border border-rule">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-6 pt-4">
-          <div>
-            <div className="font-bold text-[15px]">Recorrido de las {total} notas</div>
-            <div className="text-[11.5px] text-ink3">Cada cuadro es una nota en la etapa en que está. Se mueve al cambiar de estado.</div>
-          </div>
-          <div className="flex items-center gap-4 text-[11px] text-ink2">
-            {ESTADOS_NOTA.map((e) => <span key={e} className="flex items-center gap-1.5"><EstadoNotaTag estado={e} /></span>)}
-          </div>
-        </div>
-        <div className="mt-3">
-          <FlujoNotas ej={ej} pack={pack} />
-        </div>
-      </motion.div>
-
       <div className="p-6 grid grid-cols-1 2xl:grid-cols-[minmax(0,1fr)_380px] gap-5 items-start">
         <motion.div {...d(7)} className="min-w-0"><Tablero /></motion.div>
         <motion.div {...d(8)} className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-1 gap-5 content-start">
           <Pendientes />
           <div className="bg-panel border border-rule"><Calendario /></div>
-          <div className="bg-panel border border-rule px-4 py-3 md:col-span-2 2xl:col-span-1">
-            <Label className="mb-2">Accesos por perfil</Label>
-            <div className="flex flex-wrap gap-1.5">
-              {TRACKS.filter((t) => t.perfiles.some((p) => perfiles.includes(p))).map((t) => <span key={t.id} className="text-[11.5px] border border-rule px-2 py-0.5 text-ink2"><span className="tnum text-ink3 mr-1">{t.n}</span>{t.nombre}</span>)}
-            </div>
-          </div>
         </motion.div>
       </div>
 

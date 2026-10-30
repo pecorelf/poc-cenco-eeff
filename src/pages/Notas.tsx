@@ -122,7 +122,7 @@ export default function Notas() {
             </CabeceraListado>
             <div className="overflow-x-auto">
               <table className="tbl min-w-[980px]">
-                <thead><tr><th className="w-8">N°</th><th>Nota</th><th>Tipo</th><th>Estado</th><th className="text-center">Cuadros</th><th className="text-center">Fuentes</th><th className="text-center">Controles</th><th>Depende de</th><th className="num">Coment.</th><th className="num">Versión</th><th>Resp.</th></tr></thead>
+                <thead><tr><th className="w-8">N°</th><th>Nota</th><th>Tipo</th><th>Estado</th><th className="text-center">Cuadros</th><th className="text-center">Fuentes</th><th className="text-center">Controles</th><th>Depende de</th><th className="num">Coment.</th><th>Resp.</th></tr></thead>
                 <tbody>
                   {visibles.map((n, i) => {
                     const d = pack.notas.find((x) => x.n === n.n)!;
@@ -141,7 +141,6 @@ export default function Notas() {
                         <td className="text-center">{n.generada && d.cuadros.length ? <OkKo ok={!ko} dif={undefined} /> : <span className="text-ink3">—</span>}</td>
                         <td className="tnum text-[12px] text-ink2 whitespace-nowrap">{d.deps?.map((x) => `Nota ${x}`).join(", ") ?? "—"}</td>
                         <td className="num" style={{ color: com ? "var(--warn)" : "var(--ink-3)" }}>{com || "—"}</td>
-                        <td className="num text-ink2">{n.version ? `v${n.version}` : "—"}</td>
                         <td><Avatar id={n.responsable} size={20} /></td>
                       </motion.tr>
                     );

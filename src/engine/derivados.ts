@@ -64,6 +64,10 @@ export interface Pendiente {
 
 export function misPendientes(ej: Ejercicio, pack: IndustriaPack, uid: string, perfiles: Perfil[]): Pendiente[] {
   const out: Pendiente[] = [];
+  const sinHomologar = ej.homologacionPendiente.filter((h) => !h.asignada);
+  if (sinHomologar.length && (perfiles.includes("carga") || perfiles.includes("proceso") || perfiles.includes("admin"))) {
+    out.push({ id: "homologacion", tipo: "Revisar homologación", texto: `${sinHomologar.length} cuenta nueva en el consolidado sin línea de nota asignada · bloquea la Nota ${sinHomologar[0].nota}`, ruta: "/carga?tab=homologacion", track: "02" });
+  }
   if (perfiles.includes("carga")) {
     ej.fuentes.forEach((f) => {
       const d = pack.fuentes.find((x) => x.id === f.id)!;

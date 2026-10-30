@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
-import { RefreshCw, UploadCloud, FileSpreadsheet, Download, CheckCircle2, XCircle, AlertTriangle, Database, FileText, ArrowRight, Link2 } from "lucide-react";
+import { ArrowLeft, RefreshCw, UploadCloud, FileSpreadsheet, Download, CheckCircle2, XCircle, AlertTriangle, Database, FileText, ArrowRight, Link2 } from "lucide-react";
 import { useApp } from "../engine/store";
 import { Encabezado } from "../components/Shell";
 import { Label, EstadoFuenteTag, Drawer, Avatar, usePerfiles, tiene, esperar, Num, LineaTiempo } from "../components/ui";
@@ -72,32 +72,6 @@ function Progreso({ x }: { x: Extr }) {
   );
 }
 
-function Semaforos({ ej }: { ej: ReturnType<ReturnType<typeof useApp.getState>["ej"]> }) {
-  const c = Object.fromEntries(ESTADOS.map((e) => [e, ej.fuentes.filter((f) => f.estado === e).length])) as Record<EstadoFuente, number>;
-  const total = ej.fuentes.length;
-  return (
-    <div className="bg-panel border border-rule">
-      <div className="flex h-2">
-        {ESTADOS.map((e) => (
-          <motion.div key={e} initial={{ width: 0 }} animate={{ width: `${(c[e] / total) * 100}%` }} transition={{ duration: 0.8, ease: [0.2, 0.8, 0.2, 1] }} style={{ background: COLOR[e], opacity: e === "Pendiente" ? 0.35 : 1 }} />
-        ))}
-      </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
-        {ESTADOS.map((e) => (
-          <div key={e} className="px-4 py-3 border-r border-rule2 last:border-r-0">
-            <div className="flex items-center gap-1.5 text-[11.5px] text-ink3">
-              <span className="w-1.5 h-1.5 rounded-full" style={{ background: COLOR[e] }} />
-              {e}
-            </div>
-            <div className="text-[22px] font-semibold tnum" style={{ color: e === "Con errores" && c[e] ? "var(--ko)" : undefined }}>
-              <Num v={c[e]} fmt={(n) => String(Math.round(n))} />
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 // ---------- Carga manual con validación animada ----------
 
@@ -334,8 +308,7 @@ function DetalleFuente({ id, onClose, ext, lanzar }: { id: string | null; onClos
               { k: "Fecha", v: fechaHora(v.fecha) },
               { k: def.tipo === "integrada" ? "Ejecutado por" : "Cargado por", v: usuario(v.usuario).nombre },
               { k: "Resultado", v: v.resultado }
-            ],
-            extra: def.tipo === "manual" ? <button className="mt-1.5 text-[12.5px] font-semibold text-accent underline underline-offset-2 inline-flex items-center gap-1" onClick={() => toast(`Descarga de ${v.archivo} registrada`, "info")}>{v.archivo} <Download size={13} /></button> : undefined
+            ]
           }))} />
         )}
       </div>
@@ -343,37 +316,6 @@ function DetalleFuente({ id, onClose, ext, lanzar }: { id: string | null; onClos
   );
 }
 
-function Completitud() {
-  const ej = useApp((s) => s.ej());
-  const pack = useApp((s) => s.pack());
-  const nav = useNavigate();
-  return (
-    <div className="grid grid-cols-2 xl:grid-cols-3 gap-px bg-rule border border-rule">
-      {pack.notas.map((d, i) => {
-        const fs = d.fuentes.map((fid) => ({ def: pack.fuentes.find((x) => x.id === fid)!, run: ej.fuentes.find((x) => x.id === fid)! }));
-        const ok = fs.filter((x) => x.run.estado === "Habilitada").length;
-        const oblig = fs.filter((x) => x.def.obligatoriedad === "Obligatoria");
-        const lista = oblig.every((x) => x.run.estado === "Habilitada");
-        const n = ej.notas.find((x) => x.n === d.n)!;
-        return (
-          <motion.button key={d.n} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.012 }} onClick={() => nav(`/notas/${d.n}`)} className="bg-panel px-3 py-2.5 text-left hover:bg-paper">
-            <div className="flex items-baseline gap-2">
-              <span className="text-[11px] text-ink3 tnum w-5">{d.n}</span>
-              <span className="text-[12px] truncate flex-1">{d.titulo}</span>
-              <span className="text-[11.5px] tnum" style={{ color: lista ? "var(--ok)" : "var(--ink-2)" }}>{ok} de {fs.length}</span>
-            </div>
-            <div className="flex gap-[2px] mt-1.5 ml-7">
-              {fs.map((x) => <span key={x.def.id} title={`${x.def.nombre} · ${x.run.estado}`} className="h-[4px] flex-1" style={{ background: COLOR[x.run.estado], opacity: x.run.estado === "Pendiente" ? 0.3 : 1 }} />)}
-            </div>
-            <div className="text-[10.5px] ml-7 mt-1" style={{ color: lista ? "var(--ok)" : "var(--ink-3)" }}>
-              {n.estado === "Pendiente de fuentes" ? "Faltan fuentes obligatorias" : n.generada ? n.estado : "Lista para generar"}
-            </div>
-          </motion.button>
-        );
-      })}
-    </div>
-  );
-}
 
 function Homologacion() {
   const ej = useApp((s) => s.ej());
@@ -477,7 +419,8 @@ export default function Carga() {
   const pack = useApp((s) => s.pack());
   const perfiles = usePerfiles();
   const [params, setParams] = useSearchParams();
-  const [tab, setTab] = useState<"fuentes" | "completitud" | "homologacion" | "documentos">((params.get("tab") as any) ?? "fuentes");
+  const tab = (params.get("tab") as "fuentes" | "homologacion" | "documentos" | null) ?? "fuentes";
+  const setTab = (t: string) => setParams(t === "fuentes" ? {} : { tab: t });
   const [q, setQ] = useState("");
   const [fTipos, setFTipos] = useState<string[]>([]);
   const [fEstados, setFEstados] = useState<string[]>([]);
@@ -490,8 +433,6 @@ export default function Carga() {
 
   const TABS = [
     { id: "fuentes", n: "Catálogo de fuentes", c: pack.fuentes.length },
-    { id: "completitud", n: "Completitud por nota", c: ej.notas.filter((n) => n.estado === "Pendiente de fuentes").length },
-    { id: "homologacion", n: "Maestros y homologación", c: sinHomologar },
     { id: "documentos", n: "Fuentes documentales", c: pack.documentos.length }
   ] as const;
 
@@ -501,25 +442,18 @@ export default function Carga() {
         n="02"
         titulo="Carga de información"
         sub={<>Repositorio único de insumos de {ej.periodo}. Solo la información validada se habilita para generar notas.</>}
-        acciones={<button className="btn btn-p" disabled={!puede || Object.keys(ext).length > 0} onClick={() => lanzar(integradas)}><RefreshCw size={14} className={Object.keys(ext).length ? "animate-spin" : ""} /> Actualizar todas las integradas</button>}
       />
       <div className="p-6 space-y-5">
-        <Semaforos ej={ej} />
-        {sinHomologar > 0 && tab !== "homologacion" && (
-          <motion.button initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} onClick={() => setTab("homologacion")} className="w-full flex flex-wrap items-center gap-3 px-4 py-2.5 bg-panel border text-left" style={{ borderColor: "var(--ko)" }}>
-            <AlertTriangle size={15} className="text-ko" />
-            <span className="text-[12.5px] flex-1 min-w-[260px]">{sinHomologar} cuenta nueva en el consolidado sin línea de nota asignada. Bloquea la Nota {ej.homologacionPendiente.find((h) => !h.asignada)?.nota}.</span>
-            <span className="text-[12px] text-accent font-medium">Revisar homologación</span>
-          </motion.button>
-        )}
-        <div className="flex flex-wrap gap-0 border-b border-rule">
+        {tab === "homologacion" ? (
+          <button className="text-[12.5px] font-semibold text-accent inline-flex items-center gap-1" onClick={() => setTab("fuentes")}><ArrowLeft size={14} /> Volver a Tus fuentes</button>
+        ) : <div className="flex flex-wrap gap-0 border-b border-rule">
           {TABS.map((t) => (
             <button key={t.id} onClick={() => setTab(t.id)} className={`relative px-4 h-9 text-[12.5px] whitespace-nowrap ${tab === t.id ? "font-medium text-ink" : "text-ink2 hover:text-ink"}`}>
               {t.n} <span className="text-ink3 tnum ml-1">{t.c}</span>
               {tab === t.id && <motion.span layoutId="tabcarga" className="absolute left-0 right-0 -bottom-px h-[2px] bg-accent" />}
             </button>
           ))}
-        </div>
+        </div>}
 
         {tab === "fuentes" && (
           <div className="bg-panel border border-rule">
@@ -530,19 +464,15 @@ export default function Carga() {
                 { titulo: "Tipo de fuente", opciones: ["Integradas", "Manuales"], seleccion: fTipos, onChange: setFTipos }
               ]} />
             </CabeceraListado>
-            <div className="overflow-x-auto"><table className="tbl min-w-[1080px]">
-              <thead><tr><th className="min-w-[260px]">Fuente</th><th>Tipo</th><th>Obligatoriedad</th><th>Resp.</th><th className="num">Notas</th><th>Estado</th><th>Última carga</th><th className="num">Registros</th><th className="w-[180px]" /></tr></thead>
+            <div className="overflow-x-auto"><table className="tbl min-w-[820px]">
+              <thead><tr><th className="min-w-[260px]">Fuente</th><th>Tipo</th><th>Estado</th><th>Última carga</th><th className="num">Registros</th><th className="w-[180px]" /></tr></thead>
               <tbody>
                 {filas.map((d) => {
                   const f = ej.fuentes.find((x) => x.id === d.id)!;
-                  const nn = pack.notas.filter((n) => n.fuentes.includes(d.id)).length;
                   return (
                     <tr key={d.id} className="cursor-pointer" onClick={() => setParams({ f: d.id })}>
                       <td><div className="flex items-center gap-2">{d.tipo === "integrada" ? <Database size={13} className="text-ink3 shrink-0" /> : <FileSpreadsheet size={13} className="text-ink3 shrink-0" />}<span>{d.nombre}</span></div><div className="text-[10.5px] text-ink3 ml-[21px]">{d.origen} · {d.formato}</div></td>
                       <td className="text-ink2 whitespace-nowrap">{d.tipo === "integrada" ? "Integrada" : "Manual"}</td>
-                      <td className="text-ink2 whitespace-nowrap">{d.obligatoriedad}</td>
-                      <td><Avatar id={d.responsable} size={20} /></td>
-                      <td className="num">{nn}</td>
                       <td><motion.span key={f.estado + f.version} initial={{ opacity: 0.2 }} animate={{ opacity: 1 }} transition={{ duration: 0.6 }}><EstadoFuenteTag estado={f.estado} /></motion.span></td>
                       <td className="tnum text-ink2 whitespace-nowrap text-[11.5px]">{f.ultimaActualizacion ? fechaHora(f.ultimaActualizacion) : "—"}{f.version > 0 && <span className="text-ink3"> · v{f.version}</span>}</td>
                       <td className="num text-ink2">{f.registros ? miles(f.registros) : "—"}</td>
@@ -560,7 +490,6 @@ export default function Carga() {
             </table></div>
           </div>
         )}
-        {tab === "completitud" && <Completitud />}
         {tab === "homologacion" && <Homologacion />}
         {tab === "documentos" && <Documentos />}
       </div>

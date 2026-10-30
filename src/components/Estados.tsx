@@ -6,7 +6,6 @@ import { useApp } from "../engine/store";
 import { estadosFinancieros, cuadraturaNotas, type EstadoEF, type LineaEF } from "../engine/estados";
 import { miles } from "../engine/util";
 import { descargarXlsx } from "../engine/export";
-import { Label } from "./ui";
 
 export function useEstados() {
   const ej = useApp((s) => s.ej());
@@ -120,33 +119,8 @@ export function EstadosFinancieros() {
   const [sel, setSel] = useState(estados[0].id);
   const e = estados.find((x) => x.id === sel) ?? estados[0];
   const soc = cliente.sociedades.find((s) => s.id === ej.sociedad)?.nombre ?? cliente.nombre;
-  const ko = cuadratura.filter((c) => c.dif !== 0);
-  const sinGenerar = cuadratura.filter((c) => c.totalNota === null).length;
-  const controles = estados.flatMap((x) => x.controles.map((c) => ({ ...c, estado: x.corto })));
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="bg-panel border border-rule px-4 py-3">
-          <Label>Cuadratura notas contra estados</Label>
-          <div className="flex items-baseline gap-2 mt-1">
-            <span className="text-[26px] font-semibold tnum" style={{ color: ko.length ? "var(--ko)" : "var(--ok)" }}>{cuadratura.length - ko.length - sinGenerar}</span>
-            <span className="text-[12px] text-ink3">de {cuadratura.length} notas con carátula cuadran{sinGenerar ? ` · ${sinGenerar} sin generar` : ""}</span>
-          </div>
-          {ko.length > 0 && <div className="text-[11.5px] text-ko mt-1">Descuadre en {ko.map((c) => `Nota ${c.nota}`).join(", ")}</div>}
-        </div>
-        <div className="bg-panel border border-rule px-4 py-3 lg:col-span-2">
-          <Label className="mb-1">Controles entre estados</Label>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1">
-            {controles.map((c) => (
-              <div key={c.nombre} className="flex items-start gap-2 text-[12px]">
-                {c.dif === 0 ? <CheckCircle2 size={13} className="text-ok mt-0.5 shrink-0" /> : <XCircle size={13} className="text-ko mt-0.5 shrink-0" />}
-                <span className="min-w-0">{c.nombre}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
       <div className="bg-panel border border-rule">
         <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2 border-b border-rule">
           <div className="flex flex-wrap border border-rule">

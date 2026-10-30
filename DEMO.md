@@ -4,18 +4,18 @@ Duración sugerida: 15 a 20 minutos. Escenario inicial: **Cierre en curso** (se 
 
 ## 1. Entrada y Portada (2 min)
 1. Clave de acceso `eeff-3030`. Entrar como **María José Riquelme** (Responsable del proceso). Mostrar que la cuenta sin perfil queda rechazada y registrada.
-2. Portada del 3T 2026: el estado del EEFF aparece como tag junto al título (al pasar el cursor muestra las 9 etapas), KPIs y el **recorrido de las 38 notas**, donde cada cuadro es una nota en su etapa.
+2. Portada del 3T 2026: el estado del EEFF aparece como tag junto al título (al pasar el cursor muestra las 9 etapas), KPIs, tablero de notas y pendientes. **Nuevo ejercicio** tiene tres pasos: periodo y sociedades, fecha de cierre e hitos, y parametrización (UF, dólar de cierre y promedio, homologación y responsables por nota).
 3. Calendario de hitos D+4 a D+23 con el hito en curso destacado. Abrir **Parámetros** (UF, TC, homologación versionada, responsables por nota).
 4. Abrir **Agente del proceso** y preguntar: "¿Qué notas están bloqueando el cierre hoy?".
 
 ## 2. Carga de información (3 min)
-1. Semáforo de 26 fuentes. Clic en **Actualizar todas las integradas**: extracción asíncrona con contador de registros.
+1. Catálogo de 26 fuentes. En una fuente integrada, el ícono de actualizar lanza la extracción asíncrona con contador de registros. La cuenta nueva sin homologar llega como notificación en la campanita.
 2. Abrir **RR.HH. · Beneficios a empleados**: errores bloqueantes por fila y columna. Clic en **Usar archivo de ejemplo corregido** para ver el escaneo de estructura y contenido y la habilitación.
 3. Abrir **Inmobiliario · Tasaciones**: advertencias no bloqueantes. Confirmarlas y habilitar. La Nota 22 pasa a "Lista para generar".
-4. Pestaña **Completitud por nota**.
+4. Pestaña **Fuentes documentales**.
 
 ## 3. Estados financieros y el caso de la Nota 18 (5 min) · momento central
-0. En Generación de notas, pestaña **Estados financieros**: situación financiera (activos, pasivos y patrimonio), resultados, cambios en el patrimonio y flujos de efectivo por método directo. Los cuatro cuadran entre sí y cada línea muestra si cuadra con su nota. La Nota 18 aparece descuadrada.
+0. En Generación de notas, pestaña **Estados financieros**: situación financiera (activos, pasivos y patrimonio), resultados, cambios en el patrimonio y flujos de efectivo por método directo. Cada línea muestra si cuadra con su nota. La Nota 18 aparece descuadrada.
 1. Ir a la **Nota 18**: 4 cuadros (composición, por moneda, corriente/no corriente, por país) navegables desde el índice. La cuadratura con la carátula aparece en rojo con una diferencia de M$ 1.283.715.
 2. Clic en **Ver trazabilidad**: el grafo se dibuja desde BPC C480 hasta la cifra publicada. En rojo aparece la cuenta **2105990017 · Proveedores extranjeros en tránsito · Brasil**, sin asignar. El Agente explica la diferencia.
 3. **Asignar cuenta en homologación**, luego **Regenerar Nota 18** y **Actualizar**: animación de generación paso a paso. El control pasa a OK y el total incorpora la cuenta.
